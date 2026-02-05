@@ -14,7 +14,9 @@
       "backgroundColor": "#0D0D0D"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.cadensorenson.smoke-or-fire",
+      "appleTeamId": "CYTQN5577V"
     },
     "android": {
       "adaptiveIcon": {

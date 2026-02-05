@@ -27,8 +27,8 @@ export default function CardBack() {
 
 const styles = StyleSheet.create({
   card: {
-    width: 180,
-    height: 260,
+    width: 136,
+    height: 220,
     backgroundColor: Colors.cardBack,
     borderRadius: 16,
     padding: 8,

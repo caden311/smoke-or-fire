@@ -37,7 +37,23 @@ export interface TurnResult {
   correct: boolean;
 }
 
-export type GamePhase = "registration" | "playing" | "round-complete";
+export type GamePhase = "registration" | "playing" | "round-complete" | "pyramid";
+
+export interface PyramidMatch {
+  player: Player;
+  matchCount: number;
+  drinks: number;
+  action: "give" | "take";
+}
+
+export interface PyramidRevealResult {
+  cardIndex: number;
+  card: Card;
+  matches: PyramidMatch[];
+  row: number;
+  action: "give" | "take";
+  amount: number;
+}
 
 export interface GameState {
   players: Player[];
@@ -50,6 +66,10 @@ export interface GameState {
   currentGuess: Guess | null;
   roundType: RoundType;
   playerCards: Card[][];
+  pyramidCards: Card[];
+  pyramidRevealed: boolean[];
+  pyramidCurrentRow: number;
+  pyramidResults: PyramidRevealResult[];
 }
 
 export type GameAction =
@@ -59,4 +79,6 @@ export type GameAction =
   | { type: "MAKE_GUESS"; guess: Guess }
   | { type: "NEXT_TURN" }
   | { type: "NEXT_ROUND" }
+  | { type: "START_PYRAMID" }
+  | { type: "REVEAL_PYRAMID_ROW" }
   | { type: "RESET" };

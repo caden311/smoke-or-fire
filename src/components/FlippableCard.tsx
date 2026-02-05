@@ -44,13 +44,13 @@ export default function FlippableCard({
 
 const styles = StyleSheet.create({
   container: {
-    width: 180,
-    height: 260,
+    width: 136,
+    height: 220,
     alignItems: "center",
     justifyContent: "center",
   },
   cardWrapper: {
-    width: 180,
-    height: 260,
+    width: 136,
+    height: 220,
   },
 });

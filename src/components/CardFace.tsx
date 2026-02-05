@@ -41,8 +41,8 @@ export default function CardFace({ card }: CardFaceProps) {
 
 const styles = StyleSheet.create({
   card: {
-    width: 180,
-    height: 260,
+    width: 136,
+    height: 220,
     backgroundColor: Colors.cardFace,
     borderRadius: 16,
     padding: 12,

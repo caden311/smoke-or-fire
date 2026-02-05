@@ -29,9 +29,9 @@ export default function RoundComplete() {
   const totalPlayers = state.turnResults.length;
   const isLastRound = state.roundNumber >= 4;
 
-  const handlePlayAgain = () => {
-    dispatch({ type: "RESET" });
-    router.replace("/");
+  const handleFinalRound = () => {
+    dispatch({ type: "START_PYRAMID" });
+    router.replace("/pyramid");
   };
 
   const handleNextRound = () => {
@@ -106,9 +106,9 @@ export default function RoundComplete() {
           <View style={styles.footer}>
             {isLastRound ? (
               <ActionButton
-                title="Play Again"
-                onPress={handlePlayAgain}
-                variant="primary"
+                title="Final Round"
+                onPress={handleFinalRound}
+                variant="success"
               />
             ) : (
               <ActionButton

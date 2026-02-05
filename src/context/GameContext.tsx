@@ -1,6 +1,15 @@
 import React, { createContext, useContext, useReducer } from "react";
-import { GameState, GameAction, TurnResult } from "../types";
+import { GameState, GameAction, TurnResult, PyramidMatch, PyramidRevealResult } from "../types";
 import { createDeck, shuffleDeck, drawCard, getCardNumericValue } from "../utils/deck";
+
+const PYRAMID_ROWS = [[0], [1, 2], [3, 4, 5], [6, 7], [8]];
+const PYRAMID_ROW_RULES: { amount: number; action: "give" | "take" }[] = [
+  { amount: 1, action: "give" },
+  { amount: 2, action: "take" },
+  { amount: 3, action: "give" },
+  { amount: 4, action: "take" },
+  { amount: 5, action: "give" },
+];
 
 const initialState: GameState = {
   players: [],
@@ -13,6 +22,10 @@ const initialState: GameState = {
   currentGuess: null,
   roundType: "smoke_or_fire",
   playerCards: [],
+  pyramidCards: [],
+  pyramidRevealed: [],
+  pyramidCurrentRow: 0,
+  pyramidResults: [],
 };
 
 let nextPlayerId = 0;
@@ -141,6 +154,72 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         turnResults: [],
         currentCard: null,
         currentGuess: null,
+      };
+    }
+
+    case "START_PYRAMID": {
+      let deck = [...state.deck];
+      const pyramidCards = [];
+      for (let i = 0; i < 9; i++) {
+        const [card, remaining] = drawCard(deck);
+        pyramidCards.push(card);
+        deck = remaining;
+      }
+      return {
+        ...state,
+        deck,
+        pyramidCards,
+        pyramidRevealed: new Array(9).fill(false),
+        pyramidCurrentRow: 0,
+        pyramidResults: [],
+        phase: "pyramid",
+      };
+    }
+
+    case "REVEAL_PYRAMID_ROW": {
+      const row = state.pyramidCurrentRow;
+      if (row >= PYRAMID_ROWS.length) return state;
+
+      const currentRowIndices = PYRAMID_ROWS[row];
+      const { amount, action: rowAction } = PYRAMID_ROW_RULES[row];
+
+      const newRevealed = [...state.pyramidRevealed];
+      const newResults: PyramidRevealResult[] = [];
+
+      for (const cardIndex of currentRowIndices) {
+        newRevealed[cardIndex] = true;
+        const revealedCard = state.pyramidCards[cardIndex];
+
+        // Find matches across all players' cards from rounds 1-4
+        const matches: PyramidMatch[] = [];
+        for (let pi = 0; pi < state.players.length; pi++) {
+          const cards = state.playerCards[pi] ?? [];
+          const matchCount = cards.filter((c) => c.value === revealedCard.value).length;
+          if (matchCount > 0) {
+            matches.push({
+              player: state.players[pi],
+              matchCount,
+              drinks: amount * matchCount,
+              action: rowAction,
+            });
+          }
+        }
+
+        newResults.push({
+          cardIndex,
+          card: revealedCard,
+          matches,
+          row,
+          action: rowAction,
+          amount,
+        });
+      }
+
+      return {
+        ...state,
+        pyramidRevealed: newRevealed,
+        pyramidResults: [...state.pyramidResults, ...newResults],
+        pyramidCurrentRow: row + 1,
       };
     }
 
