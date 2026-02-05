@@ -5,6 +5,7 @@ import CardFace from "./CardFace";
 import CardBack from "./CardBack";
 import { Card } from "../types";
 import { useCardAnimation } from "../hooks/useCardAnimation";
+import { useResponsive } from "../hooks/useResponsive";
 
 interface FlippableCardProps {
   card: Card | null;
@@ -18,6 +19,7 @@ export default function FlippableCard({
 }: FlippableCardProps) {
   const { flip, reset, frontAnimatedStyle, backAnimatedStyle } =
     useCardAnimation();
+  const { mainCard } = useResponsive();
 
   React.useEffect(() => {
     if (flipped) {
@@ -28,15 +30,19 @@ export default function FlippableCard({
   }, [flipped, flip, reset]);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { width: mainCard.width, height: mainCard.height }]}>
       {/* Back of card — visible initially */}
-      <Animated.View style={[styles.cardWrapper, backAnimatedStyle]}>
-        <CardBack />
+      <Animated.View style={[styles.cardWrapper, { width: mainCard.width, height: mainCard.height }, backAnimatedStyle]}>
+        <CardBack width={mainCard.width} height={mainCard.height} />
       </Animated.View>
 
       {/* Front of card — visible after flip */}
-      <Animated.View style={[styles.cardWrapper, frontAnimatedStyle]}>
-        {card ? <CardFace card={card} /> : <CardBack />}
+      <Animated.View style={[styles.cardWrapper, { width: mainCard.width, height: mainCard.height }, frontAnimatedStyle]}>
+        {card ? (
+          <CardFace card={card} width={mainCard.width} height={mainCard.height} />
+        ) : (
+          <CardBack width={mainCard.width} height={mainCard.height} />
+        )}
       </Animated.View>
     </View>
   );
@@ -44,13 +50,8 @@ export default function FlippableCard({
 
 const styles = StyleSheet.create({
   container: {
-    width: 136,
-    height: 220,
     alignItems: "center",
     justifyContent: "center",
   },
-  cardWrapper: {
-    width: 136,
-    height: 220,
-  },
+  cardWrapper: {},
 });

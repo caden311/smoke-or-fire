@@ -5,6 +5,7 @@ import { Card } from "../types";
 import { useCardAnimation } from "../hooks/useCardAnimation";
 import { SUIT_SYMBOLS } from "../../constants/Cards";
 import { Colors } from "../../constants/Colors";
+import { useResponsive } from "../hooks/useResponsive";
 
 interface PyramidCardProps {
   card: Card;
@@ -19,6 +20,11 @@ export default function PyramidCard({
 }: PyramidCardProps) {
   const { flip, reset, frontAnimatedStyle, backAnimatedStyle } =
     useCardAnimation();
+  const { pyramidCard } = useResponsive();
+
+  const cardWidth = pyramidCard.width;
+  const cardHeight = pyramidCard.height;
+  const ratio = cardWidth / 80;
 
   React.useEffect(() => {
     if (revealed) {
@@ -34,26 +40,76 @@ export default function PyramidCard({
   return (
     <View
       style={[
-        styles.container,
+        { width: cardWidth, height: cardHeight, alignItems: "center", justifyContent: "center" },
         !active && !revealed && styles.dimmed,
       ]}
     >
       {/* Back of card */}
-      <Animated.View style={[styles.cardWrapper, backAnimatedStyle]}>
-        <View style={styles.back}>
-          <View style={styles.backInner}>
-            <View style={styles.backDiamond} />
+      <Animated.View style={[{ width: cardWidth, height: cardHeight }, backAnimatedStyle]}>
+        <View
+          style={[
+            styles.back,
+            {
+              width: cardWidth,
+              height: cardHeight,
+              borderRadius: Math.round(10 * ratio),
+              padding: Math.round(4 * ratio),
+            },
+          ]}
+        >
+          <View
+            style={[
+              styles.backInner,
+              { borderRadius: Math.round(7 * ratio) },
+            ]}
+          >
+            <View
+              style={[
+                styles.backDiamond,
+                {
+                  width: Math.round(14 * ratio),
+                  height: Math.round(14 * ratio),
+                },
+              ]}
+            />
           </View>
         </View>
       </Animated.View>
 
       {/* Front of card */}
-      <Animated.View style={[styles.cardWrapper, frontAnimatedStyle]}>
-        <View style={styles.face}>
-          <Text style={[styles.faceValue, { color: suitColor }]}>
+      <Animated.View style={[{ width: cardWidth, height: cardHeight }, frontAnimatedStyle]}>
+        <View
+          style={[
+            styles.face,
+            {
+              width: cardWidth,
+              height: cardHeight,
+              borderRadius: Math.round(10 * ratio),
+            },
+          ]}
+        >
+          <Text
+            style={[
+              styles.faceValue,
+              {
+                color: suitColor,
+                fontSize: Math.round(24 * ratio),
+                lineHeight: Math.round(28 * ratio),
+              },
+            ]}
+          >
             {card.value}
           </Text>
-          <Text style={[styles.faceSuit, { color: suitColor }]}>
+          <Text
+            style={[
+              styles.faceSuit,
+              {
+                color: suitColor,
+                fontSize: Math.round(20 * ratio),
+                lineHeight: Math.round(24 * ratio),
+              },
+            ]}
+          >
             {suitSymbol}
           </Text>
         </View>
@@ -62,29 +118,12 @@ export default function PyramidCard({
   );
 }
 
-const CARD_WIDTH = 80;
-const CARD_HEIGHT = 116;
-
 const styles = StyleSheet.create({
-  container: {
-    width: CARD_WIDTH,
-    height: CARD_HEIGHT,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   dimmed: {
     opacity: 0.5,
   },
-  cardWrapper: {
-    width: CARD_WIDTH,
-    height: CARD_HEIGHT,
-  },
   back: {
-    width: CARD_WIDTH,
-    height: CARD_HEIGHT,
     backgroundColor: Colors.cardBack,
-    borderRadius: 10,
-    padding: 4,
     borderWidth: 1.5,
     borderColor: Colors.cardBackAccent,
     shadowColor: "#000",
@@ -95,23 +134,17 @@ const styles = StyleSheet.create({
   },
   backInner: {
     flex: 1,
-    borderRadius: 7,
     borderWidth: 1.5,
     borderColor: Colors.cardBackAccent,
     alignItems: "center",
     justifyContent: "center",
   },
   backDiamond: {
-    width: 14,
-    height: 14,
     backgroundColor: Colors.cardBackAccent,
     transform: [{ rotate: "45deg" }],
   },
   face: {
-    width: CARD_WIDTH,
-    height: CARD_HEIGHT,
     backgroundColor: Colors.cardFace,
-    borderRadius: 10,
     borderWidth: 1.5,
     borderColor: "#E0E0E0",
     alignItems: "center",
@@ -123,12 +156,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   faceValue: {
-    fontSize: 24,
     fontWeight: "800",
-    lineHeight: 28,
   },
-  faceSuit: {
-    fontSize: 20,
-    lineHeight: 24,
-  },
+  faceSuit: {},
 });

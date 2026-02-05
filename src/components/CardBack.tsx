@@ -2,23 +2,103 @@ import React from "react";
 import { View, StyleSheet } from "react-native";
 import { Colors } from "../../constants/Colors";
 
-export default function CardBack() {
+interface CardBackProps {
+  width?: number;
+  height?: number;
+}
+
+export default function CardBack({ width = 136, height = 220 }: CardBackProps) {
+  const ratio = width / 136;
+
   return (
-    <View style={styles.card}>
-      <View style={styles.innerBorder}>
-        <View style={styles.pattern}>
-          {/* Decorative diamond pattern */}
-          <View style={styles.diamond} />
-          <View style={styles.diamondRow}>
-            <View style={styles.diamondSmall} />
-            <View style={styles.diamondSmall} />
+    <View
+      style={[
+        styles.card,
+        {
+          width,
+          height,
+          borderRadius: Math.round(16 * ratio),
+          padding: Math.round(8 * ratio),
+        },
+      ]}
+    >
+      <View
+        style={[
+          styles.innerBorder,
+          {
+            borderRadius: Math.round(10 * ratio),
+            padding: Math.round(8 * ratio),
+          },
+        ]}
+      >
+        <View style={[styles.pattern, { gap: Math.round(8 * ratio) }]}>
+          <View
+            style={[
+              styles.diamond,
+              {
+                width: Math.round(20 * ratio),
+                height: Math.round(20 * ratio),
+              },
+            ]}
+          />
+          <View style={[styles.diamondRow, { gap: Math.round(24 * ratio) }]}>
+            <View
+              style={[
+                styles.diamondSmall,
+                {
+                  width: Math.round(14 * ratio),
+                  height: Math.round(14 * ratio),
+                },
+              ]}
+            />
+            <View
+              style={[
+                styles.diamondSmall,
+                {
+                  width: Math.round(14 * ratio),
+                  height: Math.round(14 * ratio),
+                },
+              ]}
+            />
           </View>
-          <View style={styles.diamond} />
-          <View style={styles.diamondRow}>
-            <View style={styles.diamondSmall} />
-            <View style={styles.diamondSmall} />
+          <View
+            style={[
+              styles.diamond,
+              {
+                width: Math.round(20 * ratio),
+                height: Math.round(20 * ratio),
+              },
+            ]}
+          />
+          <View style={[styles.diamondRow, { gap: Math.round(24 * ratio) }]}>
+            <View
+              style={[
+                styles.diamondSmall,
+                {
+                  width: Math.round(14 * ratio),
+                  height: Math.round(14 * ratio),
+                },
+              ]}
+            />
+            <View
+              style={[
+                styles.diamondSmall,
+                {
+                  width: Math.round(14 * ratio),
+                  height: Math.round(14 * ratio),
+                },
+              ]}
+            />
           </View>
-          <View style={styles.diamond} />
+          <View
+            style={[
+              styles.diamond,
+              {
+                width: Math.round(20 * ratio),
+                height: Math.round(20 * ratio),
+              },
+            ]}
+          />
         </View>
       </View>
     </View>
@@ -27,14 +107,9 @@ export default function CardBack() {
 
 const styles = StyleSheet.create({
   card: {
-    width: 136,
-    height: 220,
     backgroundColor: Colors.cardBack,
-    borderRadius: 16,
-    padding: 8,
     borderWidth: 2,
     borderColor: Colors.cardBackAccent,
-    // Shadow
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -43,30 +118,22 @@ const styles = StyleSheet.create({
   },
   innerBorder: {
     flex: 1,
-    borderRadius: 10,
     borderWidth: 2,
     borderColor: Colors.cardBackAccent,
-    padding: 8,
   },
   pattern: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
   },
   diamond: {
-    width: 20,
-    height: 20,
     backgroundColor: Colors.cardBackAccent,
     transform: [{ rotate: "45deg" }],
   },
   diamondRow: {
     flexDirection: "row",
-    gap: 24,
   },
   diamondSmall: {
-    width: 14,
-    height: 14,
     backgroundColor: Colors.cardBackAccent,
     transform: [{ rotate: "45deg" }],
   },

@@ -8,9 +8,11 @@ import PlayerInput from "../src/components/PlayerInput";
 import PlayerList from "../src/components/PlayerList";
 import ActionButton from "../src/components/ActionButton";
 import { Colors } from "../constants/Colors";
+import { useResponsive } from "../src/hooks/useResponsive";
 
 export default function PlayerRegistration() {
   const { state, dispatch } = useGame();
+  const { fs, sh } = useResponsive();
 
   const handleAddPlayer = (name: string) => {
     dispatch({ type: "ADD_PLAYER", name });
@@ -37,13 +39,13 @@ export default function PlayerRegistration() {
           style={styles.content}
           behavior={Platform.OS === "ios" ? "padding" : "height"}
         >
-          <View style={styles.header}>
-            <Text style={styles.title}>
+          <View style={[styles.header, { marginBottom: sh(32) }]}>
+            <Text style={[styles.title, { fontSize: fs(40) }]}>
               <Text style={styles.titleSmoke}>SMOKE </Text>
-              <Text style={styles.titleOr}>OR </Text>
+              <Text style={[styles.titleOr, { fontSize: fs(28) }]}>OR </Text>
               <Text style={styles.titleFire}>FIRE</Text>
             </Text>
-            <Text style={styles.subtitle}>
+            <Text style={[styles.subtitle, { fontSize: fs(16) }]}>
               {state.players.length} player{state.players.length !== 1 ? "s" : ""} added
             </Text>
           </View>
@@ -82,10 +84,8 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: "center",
-    marginBottom: 32,
   },
   title: {
-    fontSize: 40,
     fontWeight: "900",
     letterSpacing: 4,
     marginBottom: 8,
@@ -95,14 +95,12 @@ const styles = StyleSheet.create({
   },
   titleOr: {
     color: Colors.textSecondary,
-    fontSize: 28,
   },
   titleFire: {
     color: Colors.red,
   },
   subtitle: {
     color: Colors.textSecondary,
-    fontSize: 16,
   },
   footer: {
     paddingVertical: 20,

@@ -13,6 +13,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { Colors } from "../../constants/Colors";
 import { lightHaptic } from "../utils/haptics";
+import { useResponsive } from "../hooks/useResponsive";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -34,6 +35,7 @@ export default function ActionButton({
   textStyle,
 }: ActionButtonProps) {
   const scale = useSharedValue(1);
+  const { fs, sw, sh } = useResponsive();
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -92,7 +94,12 @@ export default function ActionButton({
       disabled={disabled}
       style={[
         styles.button,
-        { backgroundColor: bgColor },
+        {
+          backgroundColor: bgColor,
+          paddingVertical: sh(16),
+          paddingHorizontal: sw(32),
+          minWidth: sw(120),
+        },
         variant === "ghost" && styles.ghostBorder,
         disabled && styles.disabled,
         animatedStyle,
@@ -100,7 +107,12 @@ export default function ActionButton({
       ]}
     >
       <Text
-        style={[styles.text, { color: textColor }, disabled && styles.disabledText, textStyle]}
+        style={[
+          styles.text,
+          { color: textColor, fontSize: fs(18) },
+          disabled && styles.disabledText,
+          textStyle,
+        ]}
       >
         {title}
       </Text>
@@ -110,15 +122,11 @@ export default function ActionButton({
 
 const styles = StyleSheet.create({
   button: {
-    paddingVertical: 16,
-    paddingHorizontal: 32,
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    minWidth: 120,
   },
   text: {
-    fontSize: 18,
     fontWeight: "800",
     textTransform: "uppercase",
     letterSpacing: 2,

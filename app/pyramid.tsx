@@ -8,6 +8,7 @@ import PyramidCard from "../src/components/PyramidCard";
 import PyramidResultModal from "../src/components/PyramidResultModal";
 import ActionButton from "../src/components/ActionButton";
 import { Colors } from "../constants/Colors";
+import { useResponsive } from "../src/hooks/useResponsive";
 
 const PYRAMID_ROWS = [[0], [1, 2], [3, 4, 5], [6, 7], [8]];
 const ROW_LABELS = ["GIVE 1", "TAKE 2", "GIVE 3", "TAKE 4", "GIVE 5"];
@@ -17,6 +18,7 @@ export default function Pyramid() {
   const [showModal, setShowModal] = useState(false);
   const [flippingRow, setFlippingRow] = useState<number | null>(null);
   const [lastRevealedRow, setLastRevealedRow] = useState<number | null>(null);
+  const { fs, sw, sh } = useResponsive();
 
   const allRevealed = state.pyramidRevealed.every(Boolean);
 
@@ -58,15 +60,15 @@ export default function Pyramid() {
       style={styles.gradient}
     >
       <SafeAreaView style={styles.container}>
-        <View style={styles.content}>
+        <View style={[styles.content, { paddingHorizontal: sw(16) }]}>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>FINAL ROUND</Text>
-            <Text style={styles.subtitle}>Tap a row to reveal</Text>
+            <Text style={[styles.title, { fontSize: fs(28) }]}>FINAL ROUND</Text>
+            <Text style={[styles.subtitle, { fontSize: fs(14) }]}>Tap a row to reveal</Text>
           </View>
 
           {/* Diamond Grid */}
-          <View style={styles.pyramidContainer}>
+          <View style={[styles.pyramidContainer, { gap: sh(8) }]}>
             {PYRAMID_ROWS.map((rowIndices, rowIdx) => {
               const isActiveRow = rowIdx === state.pyramidCurrentRow;
               const labelColor =
@@ -76,6 +78,7 @@ export default function Pyramid() {
                 <View
                   style={[
                     styles.row,
+                    { gap: sw(8) },
                     isActiveRow && !allRevealed && styles.activeRow,
                   ]}
                 >
@@ -92,7 +95,7 @@ export default function Pyramid() {
 
               return (
                 <View key={rowIdx} style={styles.rowContainer}>
-                  <Text style={[styles.rowLabel, { color: labelColor }]}>
+                  <Text style={[styles.rowLabel, { color: labelColor, fontSize: fs(11) }]}>
                     {ROW_LABELS[rowIdx]}
                   </Text>
                   {isActiveRow && !allRevealed ? (
@@ -138,7 +141,6 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 16,
     paddingTop: 16,
   },
   header: {
@@ -146,13 +148,11 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   title: {
-    fontSize: 28,
     fontWeight: "900",
     color: Colors.textPrimary,
     letterSpacing: 4,
   },
   subtitle: {
-    fontSize: 14,
     color: Colors.textSecondary,
     marginTop: 4,
   },
@@ -160,7 +160,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    gap: 8,
   },
   rowContainer: {
     alignItems: "center",
@@ -168,7 +167,6 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     justifyContent: "center",
-    gap: 8,
     paddingVertical: 4,
     paddingHorizontal: 8,
     borderRadius: 12,
@@ -177,7 +175,6 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.05)",
   },
   rowLabel: {
-    fontSize: 11,
     fontWeight: "800",
     letterSpacing: 1,
     textAlign: "center",

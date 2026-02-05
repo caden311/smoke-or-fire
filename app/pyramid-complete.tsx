@@ -7,9 +7,11 @@ import Animated, { FadeInDown } from "react-native-reanimated";
 import { useGame } from "../src/context/GameContext";
 import ActionButton from "../src/components/ActionButton";
 import { Colors } from "../constants/Colors";
+import { useResponsive } from "../src/hooks/useResponsive";
 
 export default function PyramidComplete() {
   const { state, dispatch } = useGame();
+  const { fs, sw, sh } = useResponsive();
 
   // Compute per-player totals
   const playerTotals = state.players.map((player) => {
@@ -40,10 +42,10 @@ export default function PyramidComplete() {
       style={styles.gradient}
     >
       <SafeAreaView style={styles.container}>
-        <View style={styles.content}>
+        <View style={[styles.content, { paddingHorizontal: sw(24) }]}>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>PYRAMID COMPLETE</Text>
+            <Text style={[styles.title, { fontSize: fs(28) }]}>PYRAMID COMPLETE</Text>
           </View>
 
           {/* Player results */}
@@ -55,17 +57,17 @@ export default function PyramidComplete() {
               <Animated.View
                 key={entry.player.id}
                 entering={FadeInDown.delay(index * 100).duration(300)}
-                style={styles.resultRow}
+                style={[styles.resultRow, { paddingHorizontal: sw(16), paddingVertical: sh(14) }]}
               >
-                <Text style={styles.playerName}>{entry.player.name}</Text>
+                <Text style={[styles.playerName, { fontSize: fs(18) }]}>{entry.player.name}</Text>
                 <View style={styles.badges}>
-                  <View style={[styles.badge, { backgroundColor: Colors.green }]}>
-                    <Text style={styles.badgeText}>
+                  <View style={[styles.badge, { backgroundColor: Colors.green, paddingHorizontal: sw(10), paddingVertical: sh(4) }]}>
+                    <Text style={[styles.badgeText, { fontSize: fs(12) }]}>
                       Gave {entry.gave}
                     </Text>
                   </View>
-                  <View style={[styles.badge, { backgroundColor: Colors.red }]}>
-                    <Text style={styles.badgeText}>
+                  <View style={[styles.badge, { backgroundColor: Colors.red, paddingHorizontal: sw(10), paddingVertical: sh(4) }]}>
+                    <Text style={[styles.badgeText, { fontSize: fs(12) }]}>
                       Took {entry.took}
                     </Text>
                   </View>
@@ -97,7 +99,6 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
     paddingTop: 20,
   },
   header: {
@@ -105,7 +106,6 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   title: {
-    fontSize: 28,
     fontWeight: "900",
     color: Colors.textPrimary,
     letterSpacing: 3,
@@ -119,12 +119,9 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     backgroundColor: Colors.surface,
     borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
     marginBottom: 8,
   },
   playerName: {
-    fontSize: 18,
     fontWeight: "700",
     color: Colors.textPrimary,
     flex: 1,
@@ -134,13 +131,10 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   badge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
     borderRadius: 8,
   },
   badgeText: {
     color: Colors.white,
-    fontSize: 12,
     fontWeight: "800",
     letterSpacing: 1,
   },

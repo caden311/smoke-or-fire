@@ -6,32 +6,80 @@ import { Colors } from "../../constants/Colors";
 
 interface CardFaceProps {
   card: Card;
+  width?: number;
+  height?: number;
 }
 
-export default function CardFace({ card }: CardFaceProps) {
+export default function CardFace({ card, width = 136, height = 220 }: CardFaceProps) {
   const suitSymbol = SUIT_SYMBOLS[card.suit];
   const suitColor = card.color === "red" ? Colors.red : "#333333";
+  const ratio = width / 136;
 
   return (
-    <View style={styles.card}>
-      <View style={styles.cornerTopLeft}>
-        <Text style={[styles.cornerValue, { color: suitColor }]}>
+    <View
+      style={[
+        styles.card,
+        {
+          width,
+          height,
+          borderRadius: Math.round(16 * ratio),
+          padding: Math.round(12 * ratio),
+        },
+      ]}
+    >
+      <View
+        style={[
+          styles.cornerTopLeft,
+          { top: Math.round(10 * ratio), left: Math.round(12 * ratio) },
+        ]}
+      >
+        <Text
+          style={[
+            styles.cornerValue,
+            { color: suitColor, fontSize: Math.round(20 * ratio), lineHeight: Math.round(22 * ratio) },
+          ]}
+        >
           {card.value}
         </Text>
-        <Text style={[styles.cornerSuit, { color: suitColor }]}>
+        <Text
+          style={[
+            styles.cornerSuit,
+            { color: suitColor, fontSize: Math.round(16 * ratio), lineHeight: Math.round(18 * ratio) },
+          ]}
+        >
           {suitSymbol}
         </Text>
       </View>
 
-      <Text style={[styles.centerSuit, { color: suitColor }]}>
+      <Text
+        style={[
+          styles.centerSuit,
+          { color: suitColor, fontSize: Math.round(64 * ratio) },
+        ]}
+      >
         {suitSymbol}
       </Text>
 
-      <View style={styles.cornerBottomRight}>
-        <Text style={[styles.cornerSuit, { color: suitColor }]}>
+      <View
+        style={[
+          styles.cornerBottomRight,
+          { bottom: Math.round(10 * ratio), right: Math.round(12 * ratio) },
+        ]}
+      >
+        <Text
+          style={[
+            styles.cornerSuit,
+            { color: suitColor, fontSize: Math.round(16 * ratio), lineHeight: Math.round(18 * ratio) },
+          ]}
+        >
           {suitSymbol}
         </Text>
-        <Text style={[styles.cornerValue, { color: suitColor }]}>
+        <Text
+          style={[
+            styles.cornerValue,
+            { color: suitColor, fontSize: Math.round(20 * ratio), lineHeight: Math.round(22 * ratio) },
+          ]}
+        >
           {card.value}
         </Text>
       </View>
@@ -41,16 +89,11 @@ export default function CardFace({ card }: CardFaceProps) {
 
 const styles = StyleSheet.create({
   card: {
-    width: 136,
-    height: 220,
     backgroundColor: Colors.cardFace,
-    borderRadius: 16,
-    padding: 12,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 2,
     borderColor: "#E0E0E0",
-    // Shadow
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -59,27 +102,16 @@ const styles = StyleSheet.create({
   },
   cornerTopLeft: {
     position: "absolute",
-    top: 10,
-    left: 12,
     alignItems: "center",
   },
   cornerBottomRight: {
     position: "absolute",
-    bottom: 10,
-    right: 12,
     alignItems: "center",
     transform: [{ rotate: "180deg" }],
   },
   cornerValue: {
-    fontSize: 20,
     fontWeight: "800",
-    lineHeight: 22,
   },
-  cornerSuit: {
-    fontSize: 16,
-    lineHeight: 18,
-  },
-  centerSuit: {
-    fontSize: 64,
-  },
+  cornerSuit: {},
+  centerSuit: {},
 });

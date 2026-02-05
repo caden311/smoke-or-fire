@@ -8,6 +8,7 @@ import { useGame } from "../src/context/GameContext";
 import ActionButton from "../src/components/ActionButton";
 import { Colors } from "../constants/Colors";
 import { SUIT_SYMBOLS } from "../constants/Cards";
+import { useResponsive } from "../src/hooks/useResponsive";
 
 const GUESS_LABELS: Record<string, string> = {
   smoke: "Smoke",
@@ -24,6 +25,7 @@ const GUESS_LABELS: Record<string, string> = {
 
 export default function RoundComplete() {
   const { state, dispatch } = useGame();
+  const { fs, sw, sh } = useResponsive();
 
   const correctCount = state.turnResults.filter((r) => r.correct).length;
   const totalPlayers = state.turnResults.length;
@@ -45,11 +47,11 @@ export default function RoundComplete() {
       style={styles.gradient}
     >
       <SafeAreaView style={styles.container}>
-        <View style={styles.content}>
+        <View style={[styles.content, { paddingHorizontal: sw(24) }]}>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>Round {state.roundNumber} Complete</Text>
-            <Text style={styles.statsText}>
+            <Text style={[styles.title, { fontSize: fs(32) }]}>Round {state.roundNumber} Complete</Text>
+            <Text style={[styles.statsText, { fontSize: fs(18) }]}>
               {correctCount} of {totalPlayers} correct
             </Text>
           </View>
@@ -68,17 +70,17 @@ export default function RoundComplete() {
                 <Animated.View
                   key={index}
                   entering={FadeInDown.delay(index * 100).duration(300)}
-                  style={styles.resultRow}
+                  style={[styles.resultRow, { paddingHorizontal: sw(16), paddingVertical: sh(14) }]}
                 >
                   <View style={styles.resultLeft}>
-                    <Text style={styles.resultName}>{result.player.name}</Text>
-                    <Text style={styles.resultGuess}>
+                    <Text style={[styles.resultName, { fontSize: fs(18) }]}>{result.player.name}</Text>
+                    <Text style={[styles.resultGuess, { fontSize: fs(13) }]}>
                       Guessed {GUESS_LABELS[result.guess] ?? result.guess}
                     </Text>
                   </View>
 
                   <View style={styles.resultRight}>
-                    <Text style={[styles.resultCard, { color: suitColor }]}>
+                    <Text style={[styles.resultCard, { color: suitColor, fontSize: fs(22) }]}>
                       {result.card.value}
                       {suitSymbol}
                     </Text>
@@ -89,10 +91,12 @@ export default function RoundComplete() {
                           backgroundColor: result.correct
                             ? Colors.green
                             : Colors.red,
+                          paddingHorizontal: sw(10),
+                          paddingVertical: sh(4),
                         },
                       ]}
                     >
-                      <Text style={styles.resultBadgeText}>
+                      <Text style={[styles.resultBadgeText, { fontSize: fs(12) }]}>
                         {result.correct ? "GAVE" : "TOOK"}
                       </Text>
                     </View>
@@ -133,7 +137,6 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
     paddingTop: 20,
   },
   header: {
@@ -141,13 +144,11 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   title: {
-    fontSize: 32,
     fontWeight: "900",
     color: Colors.textPrimary,
     letterSpacing: 2,
   },
   statsText: {
-    fontSize: 18,
     color: Colors.textSecondary,
     marginTop: 8,
   },
@@ -160,20 +161,16 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     backgroundColor: Colors.surface,
     borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
     marginBottom: 8,
   },
   resultLeft: {
     flex: 1,
   },
   resultName: {
-    fontSize: 18,
     fontWeight: "700",
     color: Colors.textPrimary,
   },
   resultGuess: {
-    fontSize: 13,
     color: Colors.textSecondary,
     marginTop: 2,
   },
@@ -183,17 +180,13 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   resultCard: {
-    fontSize: 22,
     fontWeight: "800",
   },
   resultBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
     borderRadius: 8,
   },
   resultBadgeText: {
     color: Colors.white,
-    fontSize: 12,
     fontWeight: "800",
     letterSpacing: 1,
   },

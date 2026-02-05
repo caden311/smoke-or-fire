@@ -3,6 +3,7 @@ import { View, Text, Modal, Pressable, StyleSheet, ScrollView } from "react-nati
 import { PyramidRevealResult } from "../types";
 import { SUIT_SYMBOLS } from "../../constants/Cards";
 import { Colors } from "../../constants/Colors";
+import { useResponsive } from "../hooks/useResponsive";
 
 interface PyramidResultModalProps {
   visible: boolean;
@@ -15,6 +16,8 @@ export default function PyramidResultModal({
   results,
   onClose,
 }: PyramidResultModalProps) {
+  const { fs, sw, sh, s } = useResponsive();
+
   if (results.length === 0) return null;
 
   const { action, amount } = results[0];
@@ -48,14 +51,14 @@ export default function PyramidResultModal({
       onRequestClose={onClose}
     >
       <View style={styles.backdrop}>
-        <View style={styles.content}>
+        <View style={[styles.content, { paddingHorizontal: sw(24), paddingTop: sh(28), paddingBottom: sh(40) }]}>
           {/* Card header — show all cards from the row */}
-          <View style={styles.cardRow}>
+          <View style={[styles.cardRow, { gap: s(16) }]}>
             {results.map((r, i) => {
               const symbol = SUIT_SYMBOLS[r.card.suit];
               const color = r.card.color === "red" ? Colors.red : Colors.white;
               return (
-                <Text key={i} style={[styles.cardDisplay, { color }]}>
+                <Text key={i} style={[styles.cardDisplay, { color, fontSize: fs(48) }]}>
                   {r.card.value}{symbol}
                 </Text>
               );
@@ -63,34 +66,46 @@ export default function PyramidResultModal({
           </View>
 
           {/* Action badge */}
-          <View style={[styles.actionBadge, { backgroundColor: actionColor }]}>
-            <Text style={styles.actionText}>{actionLabel}</Text>
+          <View
+            style={[
+              styles.actionBadge,
+              {
+                backgroundColor: actionColor,
+                paddingHorizontal: sw(20),
+                paddingVertical: sh(8),
+              },
+            ]}
+          >
+            <Text style={[styles.actionText, { fontSize: fs(18) }]}>{actionLabel}</Text>
           </View>
 
           {/* Match list */}
           {aggregatedMatches.length > 0 ? (
             <ScrollView style={styles.matchList} showsVerticalScrollIndicator={false}>
               {aggregatedMatches.map((entry, index) => (
-                <View key={index} style={styles.matchRow}>
-                  <Text style={styles.matchName}>{entry.playerName}</Text>
+                <View key={index} style={[styles.matchRow, { paddingHorizontal: sw(16), paddingVertical: sh(12) }]}>
+                  <Text style={[styles.matchName, { fontSize: fs(17) }]}>{entry.playerName}</Text>
                   <View style={styles.matchRight}>
-                    <Text style={[styles.matchDrinks, { color: actionColor }]}>
+                    <Text style={[styles.matchDrinks, { color: actionColor, fontSize: fs(16) }]}>
                       {entry.totalDrinks} {entry.totalDrinks === 1 ? "drink" : "drinks"}
                     </Text>
                     {entry.matchCount > 1 && (
-                      <Text style={styles.doubleTag}>({entry.matchCount}x)</Text>
+                      <Text style={[styles.doubleTag, { fontSize: fs(13) }]}>({entry.matchCount}x)</Text>
                     )}
                   </View>
                 </View>
               ))}
             </ScrollView>
           ) : (
-            <Text style={styles.noMatches}>No matches</Text>
+            <Text style={[styles.noMatches, { fontSize: fs(17) }]}>No matches</Text>
           )}
 
           {/* Continue button */}
-          <Pressable style={styles.continueButton} onPress={onClose}>
-            <Text style={styles.continueText}>CONTINUE</Text>
+          <Pressable
+            style={[styles.continueButton, { paddingHorizontal: sw(32), paddingVertical: sh(14) }]}
+            onPress={onClose}
+          >
+            <Text style={[styles.continueText, { fontSize: fs(16) }]}>CONTINUE</Text>
           </Pressable>
         </View>
       </View>
@@ -108,30 +123,22 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    paddingHorizontal: 24,
-    paddingTop: 28,
-    paddingBottom: 40,
     alignItems: "center",
     maxHeight: "60%",
   },
   cardRow: {
     flexDirection: "row",
-    gap: 16,
   },
   cardDisplay: {
-    fontSize: 48,
     fontWeight: "900",
   },
   actionBadge: {
-    paddingHorizontal: 20,
-    paddingVertical: 8,
     borderRadius: 12,
     marginTop: 12,
     marginBottom: 20,
   },
   actionText: {
     color: Colors.white,
-    fontSize: 18,
     fontWeight: "800",
     letterSpacing: 2,
   },
@@ -145,12 +152,9 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     backgroundColor: Colors.surfaceLight,
     borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
     marginBottom: 8,
   },
   matchName: {
-    fontSize: 17,
     fontWeight: "700",
     color: Colors.textPrimary,
   },
@@ -160,29 +164,23 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   matchDrinks: {
-    fontSize: 16,
     fontWeight: "800",
   },
   doubleTag: {
-    fontSize: 13,
     color: Colors.textSecondary,
     fontWeight: "700",
   },
   noMatches: {
-    fontSize: 17,
     color: Colors.textSecondary,
     marginBottom: 20,
   },
   continueButton: {
     marginTop: 16,
     backgroundColor: Colors.surfaceLight,
-    paddingHorizontal: 32,
-    paddingVertical: 14,
     borderRadius: 12,
   },
   continueText: {
     color: Colors.white,
-    fontSize: 16,
     fontWeight: "800",
     letterSpacing: 2,
   },

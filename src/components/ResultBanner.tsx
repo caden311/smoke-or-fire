@@ -7,6 +7,7 @@ import Animated, {
 import { Colors } from "../../constants/Colors";
 import { Guess, Card } from "../types";
 import { SUIT_SYMBOLS } from "../../constants/Cards";
+import { useResponsive } from "../hooks/useResponsive";
 
 interface ResultBannerProps {
   correct: boolean;
@@ -19,6 +20,7 @@ export default function ResultBanner({
   guess,
   card,
 }: ResultBannerProps) {
+  const { fs, s } = useResponsive();
   const suitSymbol = SUIT_SYMBOLS[card.suit];
   const guessLabels: Record<Guess, string> = {
     smoke: "Smoke (Black)",
@@ -40,19 +42,23 @@ export default function ResultBanner({
       entering={FadeInDown.duration(400).springify()}
       style={[
         styles.container,
-        { backgroundColor: correct ? Colors.green : Colors.red },
+        {
+          backgroundColor: correct ? Colors.green : Colors.red,
+          padding: s(20),
+          marginTop: s(20),
+        },
       ]}
     >
       <Animated.Text
         entering={FadeInUp.delay(200).duration(300)}
-        style={styles.resultText}
+        style={[styles.resultText, { fontSize: fs(28) }]}
       >
         {correct ? "CORRECT!" : "WRONG!"}
       </Animated.Text>
-      <Text style={styles.actionText}>
+      <Text style={[styles.actionText, { fontSize: fs(18) }]}>
         {correct ? "Give a drink to someone!" : "Take a drink!"}
       </Text>
-      <Text style={styles.detailText}>
+      <Text style={[styles.detailText, { fontSize: fs(13) }]}>
         You guessed {guessLabel} — Card was {cardLabel}
         {(guess === "smoke" || guess === "fire") &&
           ` (${card.color === "red" ? "Fire" : "Smoke"})`}
@@ -64,24 +70,19 @@ export default function ResultBanner({
 const styles = StyleSheet.create({
   container: {
     borderRadius: 16,
-    padding: 20,
     alignItems: "center",
     gap: 8,
-    marginTop: 20,
   },
   resultText: {
-    fontSize: 28,
     fontWeight: "900",
     color: Colors.white,
     letterSpacing: 3,
   },
   actionText: {
-    fontSize: 18,
     fontWeight: "700",
     color: Colors.white,
   },
   detailText: {
-    fontSize: 13,
     color: "rgba(255,255,255,0.8)",
     textAlign: "center",
   },
