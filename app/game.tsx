@@ -164,30 +164,34 @@ export default function GameRound() {
               <View style={styles.buttonGrid}>
                 <View style={styles.buttonGridRow}>
                   <ActionButton
-                    title={`${SUIT_SYMBOLS.hearts} HEARTS`}
+                    title={SUIT_SYMBOLS.hearts}
                     variant="hearts"
                     onPress={() => handleGuess("hearts")}
-                    style={styles.guessButton}
+                    style={styles.suitButton}
+                    textStyle={styles.suitButtonText}
                   />
                   <ActionButton
-                    title={`${SUIT_SYMBOLS.diamonds} DIAMONDS`}
+                    title={SUIT_SYMBOLS.diamonds}
                     variant="diamonds"
                     onPress={() => handleGuess("diamonds")}
-                    style={styles.guessButton}
+                    style={styles.suitButton}
+                    textStyle={styles.suitButtonText}
                   />
                 </View>
                 <View style={styles.buttonGridRow}>
                   <ActionButton
-                    title={`${SUIT_SYMBOLS.clubs} CLUBS`}
+                    title={SUIT_SYMBOLS.clubs}
                     variant="clubs"
                     onPress={() => handleGuess("clubs")}
-                    style={styles.guessButton}
+                    style={styles.suitButton}
+                    textStyle={styles.suitButtonText}
                   />
                   <ActionButton
-                    title={`${SUIT_SYMBOLS.spades} SPADES`}
+                    title={SUIT_SYMBOLS.spades}
                     variant="spades"
                     onPress={() => handleGuess("spades")}
-                    style={styles.guessButton}
+                    style={styles.suitButton}
+                    textStyle={styles.suitButtonText}
                   />
                 </View>
               </View>
@@ -377,6 +381,16 @@ const styles = StyleSheet.create({
   guessButton: {
     flex: 1,
     maxWidth: 160,
+  },
+  suitButton: {
+    flex: 1,
+    maxWidth: 160,
+    paddingVertical: 20,
+  },
+  suitButtonText: {
+    fontSize: 32,
+    textTransform: "none",
+    letterSpacing: 0,
   },
   resultSection: {
     flex: 1,

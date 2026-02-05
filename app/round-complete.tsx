@@ -41,7 +41,7 @@ export default function RoundComplete() {
 
   return (
     <LinearGradient
-      colors={[Colors.background, "#0A1A0A"]}
+      colors={[Colors.background, "#12061F"]}
       style={styles.gradient}
     >
       <SafeAreaView style={styles.container}>

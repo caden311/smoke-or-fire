@@ -10,7 +10,6 @@ import {
 import { Card, Player } from "../types";
 import { SUIT_SYMBOLS } from "../../constants/Cards";
 import { Colors } from "../../constants/Colors";
-import CardFace from "./CardFace";
 
 interface DrawnCardsModalProps {
   visible: boolean;
@@ -62,11 +61,20 @@ export default function DrawnCardsModal({
                 <View key={player.id} style={styles.playerSection}>
                   <Text style={styles.playerName}>{player.name}</Text>
                   <View style={styles.cardsRow}>
-                    {cards.map((card, cardIndex) => (
-                      <View key={cardIndex} style={styles.cardWrapper}>
-                        <CardFace card={card} />
-                      </View>
-                    ))}
+                    {cards.map((card, cardIndex) => {
+                      const suitSymbol = SUIT_SYMBOLS[card.suit];
+                      const chipColor =
+                        card.suit === "hearts" || card.suit === "diamonds"
+                          ? Colors.red
+                          : Colors.white;
+                      return (
+                        <View key={cardIndex} style={styles.cardChip}>
+                          <Text style={[styles.chipText, { color: chipColor }]}>
+                            {card.value}{suitSymbol}
+                          </Text>
+                        </View>
+                      );
+                    })}
                   </View>
                 </View>
               );
@@ -134,6 +142,7 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     paddingHorizontal: 24,
+    paddingBottom: 16,
   },
   playerSection: {
     marginTop: 20,
@@ -149,10 +158,17 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: 8,
   },
-  cardWrapper: {
-    transform: [{ scale: 0.45 }],
-    marginRight: -98,
-    marginBottom: -140,
+  cardChip: {
+    backgroundColor: Colors.surface,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: Colors.surfaceLight,
+  },
+  chipText: {
+    fontSize: 16,
+    fontWeight: "800",
   },
   footer: {
     alignItems: "center",
