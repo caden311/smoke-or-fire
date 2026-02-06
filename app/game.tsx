@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, Pressable } from "react-native";
+import { View, Text, StyleSheet, Pressable, ActivityIndicator } from "react-native";
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Animated, { FadeIn } from "react-native-reanimated";
 import { useGame } from "../src/context/GameContext";
+import { useMultiplayer } from "../src/context/MultiplayerContext";
 import FlippableCard from "../src/components/FlippableCard";
 import CardFace from "../src/components/CardFace";
 import ActionButton from "../src/components/ActionButton";
@@ -19,19 +20,59 @@ import { useResponsive } from "../src/hooks/useResponsive";
 
 export default function GameRound() {
   const { state, dispatch } = useGame();
+  const {
+    isMultiplayer,
+    isMyTurn,
+    syncedGameState,
+    syncGameState,
+    sendAction,
+    isHost,
+    pendingAction,
+    clearPending,
+  } = useMultiplayer();
   const [hasGuessed, setHasGuessed] = useState(false);
   const [showDrawnCards, setShowDrawnCards] = useState(false);
   const { fs, sw, sh, s, previousCardScale, previousCardWidth, previousCardHeight, contentPadding, isSmallScreen } = useResponsive();
 
-  const currentPlayer = state.players[state.currentPlayerIndex];
-  const isLastPlayer = state.currentPlayerIndex === state.players.length - 1;
-  const lastResult = state.turnResults[state.turnResults.length - 1];
-  const isHigherOrLower = state.roundType === "higher_or_lower";
-  const isInsideOrOutside = state.roundType === "inside_or_outside";
-  const isGuessTheSuit = state.roundType === "guess_the_suit";
+  // Determine effective state - use synced state in multiplayer mode
+  const effectiveState = isMultiplayer && syncedGameState ? syncedGameState : state;
+
+  // Sync game state from Firebase in multiplayer mode
+  useEffect(() => {
+    if (isMultiplayer && syncedGameState) {
+      dispatch({ type: "SYNC_STATE", state: syncedGameState });
+    }
+  }, [isMultiplayer, syncedGameState, dispatch]);
+
+  // Host: Process pending actions from other players
+  useEffect(() => {
+    if (isMultiplayer && isHost && pendingAction) {
+      // Apply the action locally
+      dispatch(pendingAction.action);
+      // Clear the pending action
+      clearPending();
+    }
+  }, [isMultiplayer, isHost, pendingAction, dispatch, clearPending]);
+
+  // Host: Sync state to Firebase after local state changes
+  useEffect(() => {
+    if (isMultiplayer && isHost && state.phase === "playing") {
+      syncGameState(state);
+    }
+  }, [isMultiplayer, isHost, state, syncGameState]);
+
+  const currentPlayer = effectiveState.players[effectiveState.currentPlayerIndex];
+  const isLastPlayer = effectiveState.currentPlayerIndex === effectiveState.players.length - 1;
+  const lastResult = effectiveState.turnResults[effectiveState.turnResults.length - 1];
+  const isHigherOrLower = effectiveState.roundType === "higher_or_lower";
+  const isInsideOrOutside = effectiveState.roundType === "inside_or_outside";
+  const isGuessTheSuit = effectiveState.roundType === "guess_the_suit";
   const hasPreviousCards = (isHigherOrLower || isInsideOrOutside) && !hasGuessed;
-  const playerCardHistory = state.playerCards[state.currentPlayerIndex] ?? [];
+  const playerCardHistory = effectiveState.playerCards[effectiveState.currentPlayerIndex] ?? [];
   const previousCard = playerCardHistory[playerCardHistory.length - 1] ?? null;
+
+  // Multiplayer: Check if it's this player's turn
+  const myTurn = isMyTurn(effectiveState.currentPlayerIndex, effectiveState.players);
 
   const sortedPreviousCards = isInsideOrOutside && playerCardHistory.length >= 2
     ? [playerCardHistory[0], playerCardHistory[1]].sort(
@@ -42,16 +83,23 @@ export default function GameRound() {
   // Reset flip state when player or round changes
   useEffect(() => {
     setHasGuessed(false);
-  }, [state.currentPlayerIndex, state.roundNumber]);
+  }, [effectiveState.currentPlayerIndex, effectiveState.roundNumber]);
 
-  const handleGuess = (guess: Guess) => {
+  const handleGuess = async (guess: Guess) => {
     mediumHaptic();
-    dispatch({ type: "MAKE_GUESS", guess });
+
+    if (isMultiplayer && !isHost) {
+      // Non-host: send action to host
+      await sendAction({ type: "MAKE_GUESS", guess });
+    } else {
+      // Local game or host: dispatch directly
+      dispatch({ type: "MAKE_GUESS", guess });
+    }
     setHasGuessed(true);
 
     // Haptic after flip animation completes
     setTimeout(() => {
-      if (state.deck.length > 0) {
+      if (effectiveState.deck.length > 0) {
         // We need to check the result after the state update
         // The result will be available in the next render
       }
@@ -72,17 +120,22 @@ export default function GameRound() {
     }
   }, [hasGuessed, lastResult]);
 
-  const handleNextPlayer = () => {
-    if (isLastPlayer) {
-      dispatch({ type: "NEXT_TURN" });
-      router.replace("/round-complete");
+  const handleNextPlayer = async () => {
+    if (isMultiplayer && !isHost) {
+      // Non-host: send action to host
+      await sendAction({ type: "NEXT_TURN" });
     } else {
+      // Local game or host: dispatch directly
       dispatch({ type: "NEXT_TURN" });
+    }
+
+    if (isLastPlayer) {
+      router.replace("/round-complete");
     }
   };
 
   // Redirect if not in playing phase
-  if (state.phase !== "playing") {
+  if (effectiveState.phase !== "playing") {
     return null;
   }
 
@@ -99,7 +152,7 @@ export default function GameRound() {
             <Text style={[styles.progressText, { fontSize: fs(14) }]}>
               Player {state.currentPlayerIndex + 1} of {state.players.length}
             </Text>
-            {state.playerCards.some((cards) => cards.length > 0) && (
+            {effectiveState.playerCards.some((cards) => cards.length > 0) && (
               <Pressable
                 onPress={() => setShowDrawnCards(true)}
                 style={styles.viewCardsIcon}
@@ -179,11 +232,18 @@ export default function GameRound() {
 
           {/* Card */}
           <View style={[styles.cardSection, { paddingVertical: hasPreviousCards && isSmallScreen ? sh(12) : sh(24) }]}>
-            <FlippableCard card={state.currentCard} flipped={hasGuessed} />
+            <FlippableCard card={effectiveState.currentCard} flipped={hasGuessed} />
           </View>
 
-          {/* Guess Buttons or Result */}
-          {!hasGuessed ? (
+          {/* Multiplayer: Waiting for other player */}
+          {isMultiplayer && !myTurn && !hasGuessed ? (
+            <View style={styles.waitingOverlay}>
+              <ActivityIndicator size="large" color={Colors.textSecondary} />
+              <Text style={[styles.waitingText, { fontSize: fs(18), marginTop: sh(16) }]}>
+                Waiting for {currentPlayer?.name}...
+              </Text>
+            </View>
+          ) : !hasGuessed ? (
             isGuessTheSuit ? (
               <View style={[styles.buttonGrid, { gap: s(12), marginTop: isSmallScreen ? 8 : 16 }]}>
                 <View style={[styles.buttonGridRow, { gap: s(12) }]}>
@@ -293,8 +353,8 @@ export default function GameRound() {
       <DrawnCardsModal
         visible={showDrawnCards}
         onClose={() => setShowDrawnCards(false)}
-        playerCards={state.playerCards}
-        players={state.players}
+        playerCards={effectiveState.playerCards}
+        players={effectiveState.players}
       />
     </LinearGradient>
   );
@@ -395,5 +455,15 @@ const styles = StyleSheet.create({
   nextButtonContainer: {
     alignItems: "center",
     marginTop: 20,
+  },
+  waitingOverlay: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 40,
+  },
+  waitingText: {
+    color: Colors.textSecondary,
+    textAlign: "center",
   },
 });

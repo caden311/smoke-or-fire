@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import { View, Text, StyleSheet, KeyboardAvoidingView, Platform } from "react-native";
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useGame } from "../src/context/GameContext";
+import { useMultiplayer } from "../src/context/MultiplayerContext";
 import PlayerInput from "../src/components/PlayerInput";
 import PlayerList from "../src/components/PlayerList";
 import ActionButton from "../src/components/ActionButton";
@@ -12,7 +13,10 @@ import { useResponsive } from "../src/hooks/useResponsive";
 
 export default function PlayerRegistration() {
   const { state, dispatch } = useGame();
-  const { fs, sh } = useResponsive();
+  const { isFirebaseReady, hostGame } = useMultiplayer();
+  const { fs, sh, sw } = useResponsive();
+  const [isHosting, setIsHosting] = useState(false);
+  const [hostName, setHostName] = useState("");
 
   const handleAddPlayer = (name: string) => {
     dispatch({ type: "ADD_PLAYER", name });
@@ -25,6 +29,22 @@ export default function PlayerRegistration() {
   const handleStartGame = () => {
     dispatch({ type: "START_GAME" });
     router.replace("/game");
+  };
+
+  const handleHostGame = async () => {
+    // Use first player name if available, otherwise prompt for name
+    const name = state.players[0]?.name || "Host";
+    setIsHosting(true);
+    try {
+      await hostGame(name);
+      router.replace("/host");
+    } catch (error) {
+      setIsHosting(false);
+    }
+  };
+
+  const handleJoinGame = () => {
+    router.replace("/join");
   };
 
   const canStart = state.players.length >= 2;
@@ -59,10 +79,45 @@ export default function PlayerRegistration() {
 
           <View style={styles.footer}>
             <ActionButton
-              title="Start Game"
+              title="Start Local Game"
               onPress={handleStartGame}
               disabled={!canStart}
             />
+
+            {isFirebaseReady && (
+              <View style={[styles.multiplayerSection, { marginTop: sh(24) }]}>
+                <View style={styles.dividerRow}>
+                  <View style={styles.dividerLine} />
+                  <Text style={[styles.dividerText, { fontSize: fs(12) }]}>
+                    OR PLAY ONLINE
+                  </Text>
+                  <View style={styles.dividerLine} />
+                </View>
+
+                <View style={[styles.multiplayerButtons, { gap: sw(12), marginTop: sh(16) }]}>
+                  <ActionButton
+                    title="Host Game"
+                    variant="success"
+                    onPress={handleHostGame}
+                    disabled={isHosting || state.players.length === 0}
+                    style={{ flex: 1 }}
+                    textStyle={{ textAlign: "center" }}
+                  />
+                  <ActionButton
+                    title="Join Game"
+                    variant="ghost"
+                    onPress={handleJoinGame}
+                    style={{ flex: 1 }}
+                    textStyle={{ textAlign: "center" }}
+                  />
+                </View>
+                {state.players.length === 0 && (
+                  <Text style={[styles.hostHint, { fontSize: fs(11), marginTop: sh(8) }]}>
+                    Add your name above to host a game
+                  </Text>
+                )}
+              </View>
+            )}
           </View>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -105,5 +160,30 @@ const styles = StyleSheet.create({
   footer: {
     paddingVertical: 20,
     alignItems: "center",
+  },
+  multiplayerSection: {
+    width: "100%",
+  },
+  dividerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: Colors.surfaceLight,
+  },
+  dividerText: {
+    color: Colors.gray,
+    marginHorizontal: 12,
+    fontWeight: "600",
+    letterSpacing: 1,
+  },
+  multiplayerButtons: {
+    flexDirection: "row",
+  },
+  hostHint: {
+    color: Colors.gray,
+    textAlign: "center",
   },
 });

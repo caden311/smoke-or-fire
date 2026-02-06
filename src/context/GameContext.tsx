@@ -227,6 +227,9 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       nextPlayerId = 0;
       return { ...initialState };
 
+    case "SYNC_STATE":
+      return { ...action.state };
+
     default:
       return state;
   }

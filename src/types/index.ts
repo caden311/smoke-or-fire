@@ -81,4 +81,5 @@ export type GameAction =
   | { type: "NEXT_ROUND" }
   | { type: "START_PYRAMID" }
   | { type: "REVEAL_PYRAMID_ROW" }
-  | { type: "RESET" };
+  | { type: "RESET" }
+  | { type: "SYNC_STATE"; state: GameState };

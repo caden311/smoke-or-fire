@@ -1,23 +1,35 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { useGame } from "../src/context/GameContext";
+import { useMultiplayer } from "../src/context/MultiplayerContext";
 import ActionButton from "../src/components/ActionButton";
 import { Colors } from "../constants/Colors";
 import { useResponsive } from "../src/hooks/useResponsive";
 
 export default function PyramidComplete() {
   const { state, dispatch } = useGame();
+  const { isMultiplayer, syncedGameState, leaveGame } = useMultiplayer();
   const { fs, sw, sh } = useResponsive();
 
+  // Use synced state in multiplayer mode
+  const effectiveState = isMultiplayer && syncedGameState ? syncedGameState : state;
+
+  // Sync game state from Firebase in multiplayer mode
+  useEffect(() => {
+    if (isMultiplayer && syncedGameState) {
+      dispatch({ type: "SYNC_STATE", state: syncedGameState });
+    }
+  }, [isMultiplayer, syncedGameState, dispatch]);
+
   // Compute per-player totals
-  const playerTotals = state.players.map((player) => {
+  const playerTotals = effectiveState.players.map((player) => {
     let gave = 0;
     let took = 0;
-    for (const result of state.pyramidResults) {
+    for (const result of effectiveState.pyramidResults) {
       for (const match of result.matches) {
         if (match.player.id === player.id) {
           if (match.action === "give") {
@@ -31,7 +43,10 @@ export default function PyramidComplete() {
     return { player, gave, took };
   });
 
-  const handlePlayAgain = () => {
+  const handlePlayAgain = async () => {
+    if (isMultiplayer) {
+      await leaveGame();
+    }
     dispatch({ type: "RESET" });
     router.replace("/");
   };

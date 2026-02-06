@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useGame } from "../src/context/GameContext";
+import { useMultiplayer } from "../src/context/MultiplayerContext";
 import PyramidCard from "../src/components/PyramidCard";
 import PyramidResultModal from "../src/components/PyramidResultModal";
 import ActionButton from "../src/components/ActionButton";
@@ -15,17 +16,44 @@ const ROW_LABELS = ["GIVE 1", "TAKE 2", "GIVE 3", "TAKE 4", "GIVE 5"];
 
 export default function Pyramid() {
   const { state, dispatch } = useGame();
+  const { isMultiplayer, isHost, syncedGameState, syncGameState, sendAction } = useMultiplayer();
   const [showModal, setShowModal] = useState(false);
   const [flippingRow, setFlippingRow] = useState<number | null>(null);
   const [lastRevealedRow, setLastRevealedRow] = useState<number | null>(null);
   const { fs, sw, sh } = useResponsive();
 
-  const allRevealed = state.pyramidRevealed.every(Boolean);
+  // Use synced state in multiplayer mode
+  const effectiveState = isMultiplayer && syncedGameState ? syncedGameState : state;
 
-  const handleRowPress = (rowIdx: number) => {
+  // Sync game state from Firebase in multiplayer mode
+  useEffect(() => {
+    if (isMultiplayer && syncedGameState) {
+      dispatch({ type: "SYNC_STATE", state: syncedGameState });
+    }
+  }, [isMultiplayer, syncedGameState, dispatch]);
+
+  // Host: Sync state to Firebase after local state changes
+  useEffect(() => {
+    if (isMultiplayer && isHost && state.phase === "pyramid") {
+      syncGameState(state);
+    }
+  }, [isMultiplayer, isHost, state, syncGameState]);
+
+  const allRevealed = effectiveState.pyramidRevealed.every(Boolean);
+
+  const handleRowPress = async (rowIdx: number) => {
     if (flippingRow !== null) return;
+
+    // In multiplayer, only host can reveal rows
+    if (isMultiplayer && !isHost) return;
+
     setFlippingRow(rowIdx);
-    dispatch({ type: "REVEAL_PYRAMID_ROW" });
+
+    if (isMultiplayer && !isHost) {
+      await sendAction({ type: "REVEAL_PYRAMID_ROW" });
+    } else {
+      dispatch({ type: "REVEAL_PYRAMID_ROW" });
+    }
 
     // Show modal after flip animation
     setTimeout(() => {
@@ -44,15 +72,17 @@ export default function Pyramid() {
     router.replace("/pyramid-complete");
   };
 
-  if (state.phase !== "pyramid") {
+  if (effectiveState.phase !== "pyramid") {
     return null;
   }
 
   // Filter results for the last revealed row
   const modalResults =
     lastRevealedRow !== null
-      ? state.pyramidResults.filter((r) => r.row === lastRevealedRow)
+      ? effectiveState.pyramidResults.filter((r) => r.row === lastRevealedRow)
       : [];
+
+  const canInteract = !isMultiplayer || isHost;
 
   return (
     <LinearGradient
@@ -64,13 +94,15 @@ export default function Pyramid() {
           {/* Header */}
           <View style={styles.header}>
             <Text style={[styles.title, { fontSize: fs(28) }]}>FINAL ROUND</Text>
-            <Text style={[styles.subtitle, { fontSize: fs(14) }]}>Tap a row to reveal</Text>
+            <Text style={[styles.subtitle, { fontSize: fs(14) }]}>
+              {isMultiplayer && !isHost ? "Watch as the host reveals cards" : "Tap a row to reveal"}
+            </Text>
           </View>
 
           {/* Diamond Grid */}
           <View style={[styles.pyramidContainer, { gap: sh(8) }]}>
             {PYRAMID_ROWS.map((rowIndices, rowIdx) => {
-              const isActiveRow = rowIdx === state.pyramidCurrentRow;
+              const isActiveRow = rowIdx === effectiveState.pyramidCurrentRow;
               const labelColor =
                 ROW_LABELS[rowIdx].startsWith("GIVE") ? Colors.green : Colors.red;
 
@@ -85,9 +117,9 @@ export default function Pyramid() {
                   {rowIndices.map((cardIdx) => (
                     <PyramidCard
                       key={cardIdx}
-                      card={state.pyramidCards[cardIdx]}
-                      revealed={state.pyramidRevealed[cardIdx]}
-                      active={isActiveRow && !allRevealed}
+                      card={effectiveState.pyramidCards[cardIdx]}
+                      revealed={effectiveState.pyramidRevealed[cardIdx]}
+                      active={isActiveRow && !allRevealed && canInteract}
                     />
                   ))}
                 </View>
@@ -98,7 +130,7 @@ export default function Pyramid() {
                   <Text style={[styles.rowLabel, { color: labelColor, fontSize: fs(11) }]}>
                     {ROW_LABELS[rowIdx]}
                   </Text>
-                  {isActiveRow && !allRevealed ? (
+                  {isActiveRow && !allRevealed && canInteract ? (
                     <Pressable onPress={() => handleRowPress(rowIdx)}>
                       {cardRow}
                     </Pressable>

@@ -1,10 +1,11 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { useGame } from "../src/context/GameContext";
+import { useMultiplayer } from "../src/context/MultiplayerContext";
 import ActionButton from "../src/components/ActionButton";
 import { Colors } from "../constants/Colors";
 import { SUIT_SYMBOLS } from "../constants/Cards";
@@ -25,19 +26,51 @@ const GUESS_LABELS: Record<string, string> = {
 
 export default function RoundComplete() {
   const { state, dispatch } = useGame();
+  const { isMultiplayer, isHost, syncedGameState, syncGameState, sendAction } = useMultiplayer();
   const { fs, sw, sh } = useResponsive();
 
-  const correctCount = state.turnResults.filter((r) => r.correct).length;
-  const totalPlayers = state.turnResults.length;
-  const isLastRound = state.roundNumber >= 4;
+  // Use synced state in multiplayer mode
+  const effectiveState = isMultiplayer && syncedGameState ? syncedGameState : state;
 
-  const handleFinalRound = () => {
-    dispatch({ type: "START_PYRAMID" });
+  // Sync game state from Firebase in multiplayer mode
+  useEffect(() => {
+    if (isMultiplayer && syncedGameState) {
+      dispatch({ type: "SYNC_STATE", state: syncedGameState });
+      // Navigate to game if phase changed back to playing
+      if (syncedGameState.phase === "playing") {
+        router.replace("/game");
+      } else if (syncedGameState.phase === "pyramid") {
+        router.replace("/pyramid");
+      }
+    }
+  }, [isMultiplayer, syncedGameState, dispatch]);
+
+  const correctCount = effectiveState.turnResults.filter((r) => r.correct).length;
+  const totalPlayers = effectiveState.turnResults.length;
+  const isLastRound = effectiveState.roundNumber >= 4;
+
+  const handleFinalRound = async () => {
+    if (isMultiplayer && !isHost) {
+      await sendAction({ type: "START_PYRAMID" });
+    } else {
+      dispatch({ type: "START_PYRAMID" });
+      if (isMultiplayer && isHost) {
+        // Sync will happen in effect
+      }
+    }
     router.replace("/pyramid");
   };
 
-  const handleNextRound = () => {
-    dispatch({ type: "NEXT_ROUND" });
+  const handleNextRound = async () => {
+    if (isMultiplayer && !isHost) {
+      await sendAction({ type: "NEXT_ROUND" });
+    } else {
+      dispatch({ type: "NEXT_ROUND" });
+      if (isMultiplayer && isHost) {
+        // Need to sync after dispatch
+        setTimeout(() => syncGameState(state), 0);
+      }
+    }
     router.replace("/game");
   };
 
@@ -50,7 +83,7 @@ export default function RoundComplete() {
         <View style={[styles.content, { paddingHorizontal: sw(24) }]}>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={[styles.title, { fontSize: fs(32) }]}>Round {state.roundNumber} Complete</Text>
+            <Text style={[styles.title, { fontSize: fs(32) }]}>Round {effectiveState.roundNumber} Complete</Text>
             <Text style={[styles.statsText, { fontSize: fs(18) }]}>
               {correctCount} of {totalPlayers} correct
             </Text>
@@ -61,7 +94,7 @@ export default function RoundComplete() {
             style={styles.resultsList}
             showsVerticalScrollIndicator={false}
           >
-            {state.turnResults.map((result, index) => {
+            {effectiveState.turnResults.map((result, index) => {
               const suitSymbol = SUIT_SYMBOLS[result.card.suit];
               const suitColor =
                 result.card.color === "red" ? Colors.red : Colors.white;
@@ -108,7 +141,11 @@ export default function RoundComplete() {
 
           {/* Actions */}
           <View style={styles.footer}>
-            {isLastRound ? (
+            {isMultiplayer && !isHost ? (
+              <Text style={[styles.waitingText, { fontSize: fs(16) }]}>
+                Waiting for host to continue...
+              </Text>
+            ) : isLastRound ? (
               <ActionButton
                 title="Final Round"
                 onPress={handleFinalRound}
@@ -193,5 +230,9 @@ const styles = StyleSheet.create({
   footer: {
     paddingVertical: 20,
     alignItems: "center",
+  },
+  waitingText: {
+    color: Colors.textSecondary,
+    fontStyle: "italic",
   },
 });
