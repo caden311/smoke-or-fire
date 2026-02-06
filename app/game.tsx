@@ -17,6 +17,17 @@ import { successHaptic, errorHaptic, mediumHaptic } from "../src/utils/haptics";
 import { SUIT_SYMBOLS } from "../constants/Cards";
 import DrawnCardsModal from "../src/components/DrawnCardsModal";
 import { useResponsive } from "../src/hooks/useResponsive";
+import { GameState } from "../src/types";
+
+// Validate that game state has all required data before rendering
+function isGameStateReady(state: GameState | null): state is GameState {
+  if (!state) return false;
+  if (!Array.isArray(state.players) || state.players.length === 0) return false;
+  if (!Array.isArray(state.playerCards)) return false;
+  if (!Array.isArray(state.turnResults)) return false;
+  if (state.currentPlayerIndex < 0 || state.currentPlayerIndex >= state.players.length) return false;
+  return true;
+}
 
 export default function GameRound() {
   const { state, dispatch } = useGame();
@@ -36,6 +47,20 @@ export default function GameRound() {
 
   // Determine effective state - use synced state in multiplayer mode
   const effectiveState = isMultiplayer && syncedGameState ? syncedGameState : state;
+
+  // Show loading state while waiting for valid game data (prevents iOS crash)
+  if (!isGameStateReady(effectiveState)) {
+    return (
+      <LinearGradient colors={[Colors.background, "#0A0A1A"]} style={styles.gradient}>
+        <SafeAreaView style={styles.container}>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={Colors.textSecondary} />
+            <Text style={styles.loadingText}>Loading game...</Text>
+          </View>
+        </SafeAreaView>
+      </LinearGradient>
+    );
+  }
 
   // Sync game state from Firebase in multiplayer mode
   useEffect(() => {
@@ -465,5 +490,15 @@ const styles = StyleSheet.create({
   waitingText: {
     color: Colors.textSecondary,
     textAlign: "center",
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  loadingText: {
+    color: Colors.textSecondary,
+    marginTop: 16,
+    fontSize: 18,
   },
 });

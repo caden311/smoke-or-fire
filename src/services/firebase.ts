@@ -15,14 +15,14 @@ import {
 
 // Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyB_dEQhRWiZVTBq0bHgGbuVVcwwmXrUXsQ",
+  apiKey: "AIzaSyC1wt-8t3GhPYTBIQ5MaIL5Q_oYKIhCDxQ",
   authDomain: "smoke-or-fire.firebaseapp.com",
   databaseURL: "https://smoke-or-fire-default-rtdb.firebaseio.com",
   projectId: "smoke-or-fire",
   storageBucket: "smoke-or-fire.firebasestorage.app",
   messagingSenderId: "611763859270",
-  appId: "1:611763859270:web:b0ce8408a1bea9a0c17f47",
-  measurementId: "G-6WM76TE3E5",
+  appId: "1:611763859270:web:b0f581742aecf84ec17f47",
+  measurementId: "G-8MZ63Q00CR"
 };
 
 let app: FirebaseApp | null = null;

@@ -16,18 +16,28 @@ import {
 import { GameState, GameAction, Player, Card } from "../types";
 
 // Firebase doesn't store empty arrays - they come back as undefined
+// Firebase may also convert arrays to objects with numeric keys
 // This function ensures all array fields have proper defaults
 function normalizeGameState(state: GameState | null): GameState | null {
   if (!state) return null;
+
+  // Firebase may return objects instead of arrays (e.g., {0: val, 1: val})
+  const toArray = <T>(val: T[] | Record<string, T> | null | undefined): T[] => {
+    if (!val) return [];
+    if (Array.isArray(val)) return val;
+    // Convert object with numeric keys back to array
+    return Object.values(val);
+  };
+
   return {
     ...state,
-    turnResults: state.turnResults ?? [],
-    playerCards: (state.playerCards ?? []).map(cards => cards ?? []),
-    pyramidCards: state.pyramidCards ?? [],
-    pyramidRevealed: state.pyramidRevealed ?? [],
-    pyramidResults: state.pyramidResults ?? [],
-    deck: state.deck ?? [],
-    players: state.players ?? [],
+    players: toArray(state.players),
+    deck: toArray(state.deck),
+    turnResults: toArray(state.turnResults),
+    playerCards: toArray(state.playerCards).map(cards => toArray(cards)),
+    pyramidCards: toArray(state.pyramidCards),
+    pyramidRevealed: toArray(state.pyramidRevealed),
+    pyramidResults: toArray(state.pyramidResults),
   };
 }
 
