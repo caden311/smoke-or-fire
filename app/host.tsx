@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { View, Text, StyleSheet, FlatList, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, Share, Platform, Alert } from "react-native";
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -9,6 +9,7 @@ import ActionButton from "../src/components/ActionButton";
 import { Colors } from "../constants/Colors";
 import { useResponsive } from "../src/hooks/useResponsive";
 import { createDeck, shuffleDeck } from "../src/utils/deck";
+import { lightHaptic } from "../src/utils/haptics";
 
 export default function HostLobby() {
   const { fs, sh, sw } = useResponsive();
@@ -74,6 +75,31 @@ export default function HostLobby() {
     router.replace("/");
   };
 
+  const handleShare = async () => {
+    if (!roomCode) return;
+
+    lightHaptic();
+
+    const deepLink = `smoke-or-fire://join?room=${roomCode}`;
+    const message = `Join my Smoke or Fire game!\n\nRoom Code: ${roomCode}\n\nOpen this link to join: ${deepLink}`;
+
+    try {
+      if (Platform.OS === "web") {
+        await navigator.clipboard.writeText(message);
+        Alert.alert("Copied!", "Invite link copied to clipboard");
+        return;
+      }
+
+      await Share.share({
+        message,
+        url: Platform.OS === "ios" ? deepLink : undefined,
+        title: "Join Smoke or Fire",
+      });
+    } catch (error) {
+      console.log("[HOST] Share error:", error);
+    }
+  };
+
   const canStart = isHost && players.length >= 2;
 
   return (
@@ -110,6 +136,12 @@ export default function HostLobby() {
               <Text style={[styles.codeHint, { fontSize: fs(12) }]}>
                 Share this code with friends
               </Text>
+              <ActionButton
+                title="Share Invite"
+                variant="success"
+                onPress={handleShare}
+                style={{ marginTop: sh(16) }}
+              />
             </View>
           )}
 

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,7 +8,7 @@ import {
   Platform,
   Alert,
 } from "react-native";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useMultiplayer } from "../src/context/MultiplayerContext";
@@ -23,6 +23,16 @@ export default function JoinGame() {
   const [playerName, setPlayerName] = useState("");
   const [isJoining, setIsJoining] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { room } = useLocalSearchParams<{ room?: string }>();
+
+  useEffect(() => {
+    if (room && typeof room === "string") {
+      const code = room.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 4);
+      if (code.length === 4) {
+        setRoomCode(code);
+      }
+    }
+  }, [room]);
 
   const handleJoin = async () => {
     const code = roomCode.trim().toUpperCase();
