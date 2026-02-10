@@ -1,23 +1,23 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { View, Text, StyleSheet, Pressable, ActivityIndicator } from "react-native";
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Animated, { FadeIn } from "react-native-reanimated";
-import { useGame } from "../src/context/GameContext";
 import { useMultiplayer } from "../src/context/MultiplayerContext";
+import { useGameState } from "../src/hooks/useGameState";
+import { useGameActions } from "../src/hooks/useGameActions";
 import FlippableCard from "../src/components/FlippableCard";
 import CardFace from "../src/components/CardFace";
 import ActionButton from "../src/components/ActionButton";
 import ResultBanner from "../src/components/ResultBanner";
 import { Colors } from "../constants/Colors";
-import { Guess } from "../src/types";
+import { Guess, GameState } from "../src/types";
 import { getCardNumericValue } from "../src/utils/deck";
 import { successHaptic, errorHaptic, mediumHaptic } from "../src/utils/haptics";
 import { SUIT_SYMBOLS } from "../constants/Cards";
 import DrawnCardsModal from "../src/components/DrawnCardsModal";
 import { useResponsive } from "../src/hooks/useResponsive";
-import { GameState } from "../src/types";
 
 // Validate that game state has all required data before rendering
 function isGameStateReady(state: GameState | null): state is GameState {
@@ -30,26 +30,76 @@ function isGameStateReady(state: GameState | null): state is GameState {
 }
 
 export default function GameRound() {
-  const { state, dispatch } = useGame();
-  const {
-    isMultiplayer,
-    isMyTurn,
-    syncedGameState,
-    syncGameState,
-    sendAction,
-    isHost,
-    pendingAction,
-    clearPending,
-  } = useMultiplayer();
-  const [hasGuessed, setHasGuessed] = useState(false);
+  const { isMultiplayer, isHost } = useMultiplayer();
+  const { state, isLoading, isMyTurn, currentPlayer } = useGameState();
+  const { dispatch } = useGameActions();
+
+  const [guessState, setGuessState] = useState<'idle' | 'submitting' | 'guessed'>('idle');
   const [showDrawnCards, setShowDrawnCards] = useState(false);
   const { fs, sw, sh, s, previousCardScale, previousCardWidth, previousCardHeight, contentPadding, isSmallScreen } = useResponsive();
 
-  // Determine effective state - use synced state in multiplayer mode
-  const effectiveState = isMultiplayer && syncedGameState ? syncedGameState : state;
+  // Track player/round changes to reset guess state
+  const prevPlayerRef = useRef<number | null>(null);
+  const prevRoundRef = useRef<number | null>(null);
 
-  // Show loading state while waiting for valid game data (prevents iOS crash)
-  if (!isGameStateReady(effectiveState)) {
+  // Effect 1: Navigate on phase change (works for both local and multiplayer)
+  useEffect(() => {
+    if (!state) return;
+    if (state.phase === "round-complete") {
+      router.replace("/round-complete");
+    } else if (state.phase === "pyramid") {
+      router.replace("/pyramid");
+    }
+  }, [state?.phase]);
+
+  // Effect 2: Reset guess state on turn/round change
+  useEffect(() => {
+    if (!isGameStateReady(state)) return;
+
+    const playerChanged = prevPlayerRef.current !== null &&
+                          prevPlayerRef.current !== state.currentPlayerIndex;
+    const roundChanged = prevRoundRef.current !== null &&
+                         prevRoundRef.current !== state.roundNumber;
+
+    if (playerChanged || roundChanged) {
+      setGuessState('idle');
+    }
+
+    prevPlayerRef.current = state.currentPlayerIndex;
+    prevRoundRef.current = state.roundNumber;
+  }, [state?.currentPlayerIndex, state?.roundNumber]);
+
+  // Effect 3: Confirm guess when card appears (for non-host in multiplayer)
+  useEffect(() => {
+    if (!isMultiplayer || !isGameStateReady(state)) return;
+
+    // When submitting and card appears, confirm the guess
+    if (guessState === 'submitting' && state.currentCard != null) {
+      console.log('[GAME] Guess confirmed via card appearance');
+      setGuessState('guessed');
+    }
+  }, [isMultiplayer, guessState, state?.currentCard]);
+
+  // Effect 4: Trigger haptic when result appears
+  useEffect(() => {
+    if (!isGameStateReady(state)) return;
+    if (guessState !== 'guessed') return;
+
+    const lastResult = state.turnResults[state.turnResults.length - 1];
+    if (lastResult) {
+      const timer = setTimeout(() => {
+        if (lastResult.correct) {
+          successHaptic();
+        } else {
+          errorHaptic();
+        }
+      }, 600);
+      return () => clearTimeout(timer);
+    }
+  }, [guessState, state?.turnResults?.length]);
+
+  // Show loading state while waiting for valid game data
+  if (isLoading || !isGameStateReady(state)) {
     return (
       <LinearGradient colors={[Colors.background, "#0A0A1A"]} style={styles.gradient}>
         <SafeAreaView style={styles.container}>
@@ -62,42 +112,25 @@ export default function GameRound() {
     );
   }
 
-  // Sync game state from Firebase in multiplayer mode
-  useEffect(() => {
-    if (isMultiplayer && syncedGameState) {
-      dispatch({ type: "SYNC_STATE", state: syncedGameState });
-    }
-  }, [isMultiplayer, syncedGameState, dispatch]);
+  // Redirect if not in playing phase
+  if (state.phase !== "playing") {
+    return null;
+  }
 
-  // Host: Process pending actions from other players
-  useEffect(() => {
-    if (isMultiplayer && isHost && pendingAction) {
-      // Apply the action locally
-      dispatch(pendingAction.action);
-      // Clear the pending action
-      clearPending();
-    }
-  }, [isMultiplayer, isHost, pendingAction, dispatch, clearPending]);
+  // === SAFE TO ACCESS state properties below this point ===
 
-  // Host: Sync state to Firebase after local state changes
-  useEffect(() => {
-    if (isMultiplayer && isHost && state.phase === "playing") {
-      syncGameState(state);
-    }
-  }, [isMultiplayer, isHost, state, syncGameState]);
+  const isLastPlayer = state.currentPlayerIndex === state.players.length - 1;
+  const lastResult = state.turnResults[state.turnResults.length - 1] ?? null;
 
-  const currentPlayer = effectiveState.players[effectiveState.currentPlayerIndex];
-  const isLastPlayer = effectiveState.currentPlayerIndex === effectiveState.players.length - 1;
-  const lastResult = effectiveState.turnResults[effectiveState.turnResults.length - 1];
-  const isHigherOrLower = effectiveState.roundType === "higher_or_lower";
-  const isInsideOrOutside = effectiveState.roundType === "inside_or_outside";
-  const isGuessTheSuit = effectiveState.roundType === "guess_the_suit";
-  const hasPreviousCards = (isHigherOrLower || isInsideOrOutside) && !hasGuessed;
-  const playerCardHistory = effectiveState.playerCards[effectiveState.currentPlayerIndex] ?? [];
+  // Card flip logic: show card when it exists in state
+  const shouldShowFlipped = state.currentCard != null;
+
+  const isHigherOrLower = state.roundType === "higher_or_lower";
+  const isInsideOrOutside = state.roundType === "inside_or_outside";
+  const isGuessTheSuit = state.roundType === "guess_the_suit";
+  const hasPreviousCards = (isHigherOrLower || isInsideOrOutside) && guessState === 'idle';
+  const playerCardHistory = state.playerCards[state.currentPlayerIndex] ?? [];
   const previousCard = playerCardHistory[playerCardHistory.length - 1] ?? null;
-
-  // Multiplayer: Check if it's this player's turn
-  const myTurn = isMyTurn(effectiveState.currentPlayerIndex, effectiveState.players);
 
   const sortedPreviousCards = isInsideOrOutside && playerCardHistory.length >= 2
     ? [playerCardHistory[0], playerCardHistory[1]].sort(
@@ -105,64 +138,33 @@ export default function GameRound() {
       )
     : [];
 
-  // Reset flip state when player or round changes
-  useEffect(() => {
-    setHasGuessed(false);
-  }, [effectiveState.currentPlayerIndex, effectiveState.roundNumber]);
-
   const handleGuess = async (guess: Guess) => {
+    console.log('[GAME] handleGuess', { guess, isHost, isMyTurn });
     mediumHaptic();
 
-    if (isMultiplayer && !isHost) {
-      // Non-host: send action to host
-      await sendAction({ type: "MAKE_GUESS", guess });
-    } else {
-      // Local game or host: dispatch directly
-      dispatch({ type: "MAKE_GUESS", guess });
-    }
-    setHasGuessed(true);
+    setGuessState('submitting');
+    await dispatch({ type: "MAKE_GUESS", guess });
 
-    // Haptic after flip animation completes
-    setTimeout(() => {
-      if (effectiveState.deck.length > 0) {
-        // We need to check the result after the state update
-        // The result will be available in the next render
-      }
-    }, 600);
+    // For local game or host, immediately confirm
+    if (!isMultiplayer || isHost) {
+      setGuessState('guessed');
+    }
+    // For non-host, Effect 3 will confirm when card appears
   };
-
-  // Trigger haptic when result appears
-  useEffect(() => {
-    if (hasGuessed && lastResult) {
-      const timer = setTimeout(() => {
-        if (lastResult.correct) {
-          successHaptic();
-        } else {
-          errorHaptic();
-        }
-      }, 600);
-      return () => clearTimeout(timer);
-    }
-  }, [hasGuessed, lastResult]);
 
   const handleNextPlayer = async () => {
-    if (isMultiplayer && !isHost) {
-      // Non-host: send action to host
-      await sendAction({ type: "NEXT_TURN" });
-    } else {
-      // Local game or host: dispatch directly
-      dispatch({ type: "NEXT_TURN" });
-    }
+    // In multiplayer, current player can advance their own turn
+    if (isMultiplayer && !isMyTurn) return;
 
-    if (isLastPlayer) {
-      router.replace("/round-complete");
-    }
+    await dispatch({ type: "NEXT_TURN" });
+    // Navigation handled by Effect 1 when phase changes
   };
 
-  // Redirect if not in playing phase
-  if (effectiveState.phase !== "playing") {
-    return null;
-  }
+  // Determine what UI to show
+  const showWaitingForOther = isMultiplayer && !isMyTurn && guessState === 'idle';
+  const showSubmitting = guessState === 'submitting';
+  const showGuessButtons = guessState === 'idle' && !showWaitingForOther;
+  const showResult = guessState === 'guessed';
 
   return (
     <LinearGradient
@@ -177,26 +179,26 @@ export default function GameRound() {
             <Text style={[styles.progressText, { fontSize: fs(14) }]}>
               Player {state.currentPlayerIndex + 1} of {state.players.length}
             </Text>
-            {effectiveState.playerCards.some((cards) => cards.length > 0) && (
+            {state.playerCards.some((cards) => cards.length > 0) && (
               <Pressable
                 onPress={() => setShowDrawnCards(true)}
                 style={styles.viewCardsIcon}
                 hitSlop={8}
               >
-                <Text style={styles.viewCardsIconText}>🃏</Text>
+                <Text style={styles.viewCardsIconText}>&#127183;</Text>
               </Pressable>
             )}
           </View>
 
           {/* Player Name */}
           <Animated.View
-            key={currentPlayer.id}
+            key={currentPlayer?.id}
             entering={FadeIn.duration(300)}
             style={[styles.playerSection, { marginBottom: 20 }]}
           >
-            <Text style={[styles.playerName, { fontSize: fs(36) }]}>{currentPlayer.name}</Text>
+            <Text style={[styles.playerName, { fontSize: fs(36) }]}>{currentPlayer?.name}</Text>
             <Text style={[styles.promptText, { fontSize: fs(18) }]}>
-              {hasGuessed
+              {showResult
                 ? ""
                 : isGuessTheSuit
                   ? "Guess the Suit"
@@ -209,7 +211,7 @@ export default function GameRound() {
           </Animated.View>
 
           {/* Previous Card (Higher or Lower round) */}
-          {isHigherOrLower && previousCard && !hasGuessed && (
+          {isHigherOrLower && previousCard && guessState === 'idle' && (
             <View style={[styles.previousCardSection, { marginBottom: 20 }]}>
               <Text style={[styles.previousCardLabel, { fontSize: fs(14), marginBottom: 20 }]}>Your last card:</Text>
               <View style={{
@@ -226,7 +228,7 @@ export default function GameRound() {
           )}
 
           {/* Previous Cards (Inside or Outside round) */}
-          {isInsideOrOutside && sortedPreviousCards.length === 2 && !hasGuessed && (
+          {isInsideOrOutside && sortedPreviousCards.length === 2 && guessState === 'idle' && (
             <View style={[styles.previousCardSection, { marginBottom: 20 }]}>
               <Text style={[styles.previousCardLabel, { fontSize: fs(14), marginBottom: 20 }]}>Your cards:</Text>
               <View style={styles.previousCardsRow}>
@@ -257,18 +259,31 @@ export default function GameRound() {
 
           {/* Card */}
           <View style={[styles.cardSection, { paddingVertical: hasPreviousCards && isSmallScreen ? sh(12) : sh(24) }]}>
-            <FlippableCard card={effectiveState.currentCard} flipped={hasGuessed} />
+            <FlippableCard card={state.currentCard} flipped={shouldShowFlipped} />
           </View>
 
-          {/* Multiplayer: Waiting for other player */}
-          {isMultiplayer && !myTurn && !hasGuessed ? (
+          {/* Waiting for other player */}
+          {showWaitingForOther && (
             <View style={styles.waitingOverlay}>
               <ActivityIndicator size="large" color={Colors.textSecondary} />
               <Text style={[styles.waitingText, { fontSize: fs(18), marginTop: sh(16) }]}>
                 Waiting for {currentPlayer?.name}...
               </Text>
             </View>
-          ) : !hasGuessed ? (
+          )}
+
+          {/* Submitting guess */}
+          {showSubmitting && (
+            <View style={styles.waitingOverlay}>
+              <ActivityIndicator size="large" color={Colors.textSecondary} />
+              <Text style={[styles.waitingText, { fontSize: fs(18), marginTop: sh(16) }]}>
+                Submitting guess...
+              </Text>
+            </View>
+          )}
+
+          {/* Guess buttons */}
+          {showGuessButtons && (
             isGuessTheSuit ? (
               <View style={[styles.buttonGrid, { gap: s(12), marginTop: isSmallScreen ? 8 : 16 }]}>
                 <View style={[styles.buttonGridRow, { gap: s(12) }]}>
@@ -354,7 +369,10 @@ export default function GameRound() {
               )}
             </View>
             )
-          ) : (
+          )}
+
+          {/* Result and Next button */}
+          {showResult && (
             <View style={styles.resultSection}>
               {lastResult && (
                 <ResultBanner
@@ -378,8 +396,8 @@ export default function GameRound() {
       <DrawnCardsModal
         visible={showDrawnCards}
         onClose={() => setShowDrawnCards(false)}
-        playerCards={effectiveState.playerCards}
-        players={effectiveState.players}
+        playerCards={state.playerCards}
+        players={state.players}
       />
     </LinearGradient>
   );

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, Pressable, StyleSheet } from "react-native";
+import { View, Text, Pressable, StyleSheet, ActivityIndicator } from "react-native";
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useGame } from "../src/context/GameContext";
 import { useMultiplayer } from "../src/context/MultiplayerContext";
+import { useGameState } from "../src/hooks/useGameState";
+import { useGameActions } from "../src/hooks/useGameActions";
 import PyramidCard from "../src/components/PyramidCard";
 import PyramidResultModal from "../src/components/PyramidResultModal";
 import ActionButton from "../src/components/ActionButton";
@@ -15,45 +16,64 @@ const PYRAMID_ROWS = [[0], [1, 2], [3, 4, 5], [6, 7], [8]];
 const ROW_LABELS = ["GIVE 1", "TAKE 2", "GIVE 3", "TAKE 4", "GIVE 5"];
 
 export default function Pyramid() {
-  const { state, dispatch } = useGame();
-  const { isMultiplayer, isHost, syncedGameState, syncGameState, sendAction } = useMultiplayer();
+  const { isMultiplayer, isHost } = useMultiplayer();
+  const { state, isLoading } = useGameState();
+  const { dispatch } = useGameActions();
+
   const [showModal, setShowModal] = useState(false);
   const [flippingRow, setFlippingRow] = useState<number | null>(null);
   const [lastRevealedRow, setLastRevealedRow] = useState<number | null>(null);
   const { fs, sw, sh } = useResponsive();
 
-  // Use synced state in multiplayer mode
-  const effectiveState = isMultiplayer && syncedGameState ? syncedGameState : state;
+  // Track when pyramid row changes to show modal for non-host
+  const prevCurrentRowRef = React.useRef<number | null>(null);
 
-  // Sync game state from Firebase in multiplayer mode
+  // Effect: Show modal when row is revealed (for non-host watching)
   useEffect(() => {
-    if (isMultiplayer && syncedGameState) {
-      dispatch({ type: "SYNC_STATE", state: syncedGameState });
-    }
-  }, [isMultiplayer, syncedGameState, dispatch]);
+    if (!state || !isMultiplayer || isHost) return;
 
-  // Host: Sync state to Firebase after local state changes
-  useEffect(() => {
-    if (isMultiplayer && isHost && state.phase === "pyramid") {
-      syncGameState(state);
-    }
-  }, [isMultiplayer, isHost, state, syncGameState]);
+    const currentRow = state.pyramidCurrentRow;
+    const prevRow = prevCurrentRowRef.current;
 
-  const allRevealed = effectiveState.pyramidRevealed.every(Boolean);
+    // If row advanced, show the modal for the newly revealed row
+    if (prevRow !== null && currentRow > prevRow) {
+      const revealedRow = currentRow - 1;
+      setLastRevealedRow(revealedRow);
+      setShowModal(true);
+    }
+
+    prevCurrentRowRef.current = currentRow;
+  }, [state?.pyramidCurrentRow, isMultiplayer, isHost]);
+
+  // Show loading state
+  if (isLoading || !state) {
+    return (
+      <LinearGradient colors={[Colors.background, "#0A0A1A"]} style={styles.gradient}>
+        <SafeAreaView style={styles.container}>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={Colors.textSecondary} />
+            <Text style={styles.loadingText}>Loading pyramid...</Text>
+          </View>
+        </SafeAreaView>
+      </LinearGradient>
+    );
+  }
+
+  if (state.phase !== "pyramid") {
+    return null;
+  }
+
+  const allRevealed = state.pyramidRevealed.every(Boolean);
 
   const handleRowPress = async (rowIdx: number) => {
     if (flippingRow !== null) return;
 
-    // In multiplayer, only host can reveal rows
+    // Only host can reveal rows in multiplayer
     if (isMultiplayer && !isHost) return;
 
     setFlippingRow(rowIdx);
 
-    if (isMultiplayer && !isHost) {
-      await sendAction({ type: "REVEAL_PYRAMID_ROW" });
-    } else {
-      dispatch({ type: "REVEAL_PYRAMID_ROW" });
-    }
+    await dispatch({ type: "REVEAL_PYRAMID_ROW" });
 
     // Show modal after flip animation
     setTimeout(() => {
@@ -72,14 +92,10 @@ export default function Pyramid() {
     router.replace("/pyramid-complete");
   };
 
-  if (effectiveState.phase !== "pyramid") {
-    return null;
-  }
-
   // Filter results for the last revealed row
   const modalResults =
     lastRevealedRow !== null
-      ? effectiveState.pyramidResults.filter((r) => r.row === lastRevealedRow)
+      ? state.pyramidResults.filter((r) => r.row === lastRevealedRow)
       : [];
 
   const canInteract = !isMultiplayer || isHost;
@@ -102,7 +118,7 @@ export default function Pyramid() {
           {/* Diamond Grid */}
           <View style={[styles.pyramidContainer, { gap: sh(8) }]}>
             {PYRAMID_ROWS.map((rowIndices, rowIdx) => {
-              const isActiveRow = rowIdx === effectiveState.pyramidCurrentRow;
+              const isActiveRow = rowIdx === state.pyramidCurrentRow;
               const labelColor =
                 ROW_LABELS[rowIdx].startsWith("GIVE") ? Colors.green : Colors.red;
 
@@ -117,8 +133,8 @@ export default function Pyramid() {
                   {rowIndices.map((cardIdx) => (
                     <PyramidCard
                       key={cardIdx}
-                      card={effectiveState.pyramidCards[cardIdx]}
-                      revealed={effectiveState.pyramidRevealed[cardIdx]}
+                      card={state.pyramidCards[cardIdx]}
+                      revealed={state.pyramidRevealed[cardIdx]}
                       active={isActiveRow && !allRevealed && canInteract}
                     />
                   ))}
@@ -215,5 +231,15 @@ const styles = StyleSheet.create({
   footer: {
     paddingVertical: 20,
     alignItems: "center",
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  loadingText: {
+    color: Colors.textSecondary,
+    marginTop: 16,
+    fontSize: 18,
   },
 });

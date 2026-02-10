@@ -1,11 +1,12 @@
 import React, { useEffect } from "react";
-import { View, Text, StyleSheet, ScrollView } from "react-native";
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Animated, { FadeInDown } from "react-native-reanimated";
-import { useGame } from "../src/context/GameContext";
 import { useMultiplayer } from "../src/context/MultiplayerContext";
+import { useGameState } from "../src/hooks/useGameState";
+import { useGameActions } from "../src/hooks/useGameActions";
 import ActionButton from "../src/components/ActionButton";
 import { Colors } from "../constants/Colors";
 import { SUIT_SYMBOLS } from "../constants/Cards";
@@ -25,54 +26,57 @@ const GUESS_LABELS: Record<string, string> = {
 };
 
 export default function RoundComplete() {
-  const { state, dispatch } = useGame();
-  const { isMultiplayer, isHost, syncedGameState, syncGameState, sendAction } = useMultiplayer();
+  const { isMultiplayer, isHost } = useMultiplayer();
+  const { state, isLoading } = useGameState();
+  const { dispatch } = useGameActions();
   const { fs, sw, sh } = useResponsive();
 
-  // Use synced state in multiplayer mode
-  const effectiveState = isMultiplayer && syncedGameState ? syncedGameState : state;
-
-  // Sync game state from Firebase in multiplayer mode
+  // Navigate when phase changes
   useEffect(() => {
-    if (isMultiplayer && syncedGameState) {
-      dispatch({ type: "SYNC_STATE", state: syncedGameState });
-      // Navigate to game if phase changed back to playing
-      if (syncedGameState.phase === "playing") {
-        router.replace("/game");
-      } else if (syncedGameState.phase === "pyramid") {
-        router.replace("/pyramid");
-      }
-    }
-  }, [isMultiplayer, syncedGameState, dispatch]);
+    if (!state) return;
 
-  const correctCount = effectiveState.turnResults.filter((r) => r.correct).length;
-  const totalPlayers = effectiveState.turnResults.length;
-  const isLastRound = effectiveState.roundNumber >= 4;
+    if (state.phase === "playing") {
+      router.replace("/game");
+    } else if (state.phase === "pyramid") {
+      router.replace("/pyramid");
+    }
+  }, [state?.phase]);
+
+  // Show loading state
+  if (isLoading || !state) {
+    return (
+      <LinearGradient colors={[Colors.background, "#12061F"]} style={styles.gradient}>
+        <SafeAreaView style={styles.container}>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={Colors.textSecondary} />
+            <Text style={styles.loadingText}>Loading results...</Text>
+          </View>
+        </SafeAreaView>
+      </LinearGradient>
+    );
+  }
+
+  // If not in round-complete phase, don't render (navigation will handle redirect)
+  if (state.phase !== "round-complete") {
+    return null;
+  }
+
+  const correctCount = state.turnResults.filter((r) => r.correct).length;
+  const totalPlayers = state.turnResults.length;
+  const isLastRound = state.roundNumber >= 4;
 
   const handleFinalRound = async () => {
-    if (isMultiplayer && !isHost) {
-      await sendAction({ type: "START_PYRAMID" });
-    } else {
-      dispatch({ type: "START_PYRAMID" });
-      if (isMultiplayer && isHost) {
-        // Sync will happen in effect
-      }
-    }
-    router.replace("/pyramid");
+    await dispatch({ type: "START_PYRAMID" });
+    // Navigation handled by phase change effect
   };
 
   const handleNextRound = async () => {
-    if (isMultiplayer && !isHost) {
-      await sendAction({ type: "NEXT_ROUND" });
-    } else {
-      dispatch({ type: "NEXT_ROUND" });
-      if (isMultiplayer && isHost) {
-        // Need to sync after dispatch
-        setTimeout(() => syncGameState(state), 0);
-      }
-    }
-    router.replace("/game");
+    await dispatch({ type: "NEXT_ROUND" });
+    // Navigation handled by phase change effect
   };
+
+  // Only host can advance the game in multiplayer
+  const showNextButton = !isMultiplayer || isHost;
 
   return (
     <LinearGradient
@@ -83,7 +87,7 @@ export default function RoundComplete() {
         <View style={[styles.content, { paddingHorizontal: sw(24) }]}>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={[styles.title, { fontSize: fs(32) }]}>Round {effectiveState.roundNumber} Complete</Text>
+            <Text style={[styles.title, { fontSize: fs(32) }]}>Round {state.roundNumber} Complete</Text>
             <Text style={[styles.statsText, { fontSize: fs(18) }]}>
               {correctCount} of {totalPlayers} correct
             </Text>
@@ -94,7 +98,7 @@ export default function RoundComplete() {
             style={styles.resultsList}
             showsVerticalScrollIndicator={false}
           >
-            {effectiveState.turnResults.map((result, index) => {
+            {state.turnResults.map((result, index) => {
               const suitSymbol = SUIT_SYMBOLS[result.card.suit];
               const suitColor =
                 result.card.color === "red" ? Colors.red : Colors.white;
@@ -141,22 +145,24 @@ export default function RoundComplete() {
 
           {/* Actions */}
           <View style={styles.footer}>
-            {isMultiplayer && !isHost ? (
+            {showNextButton ? (
+              isLastRound ? (
+                <ActionButton
+                  title="Final Round"
+                  onPress={handleFinalRound}
+                  variant="success"
+                />
+              ) : (
+                <ActionButton
+                  title="Next Round"
+                  onPress={handleNextRound}
+                  variant="success"
+                />
+              )
+            ) : (
               <Text style={[styles.waitingText, { fontSize: fs(16) }]}>
                 Waiting for host to continue...
               </Text>
-            ) : isLastRound ? (
-              <ActionButton
-                title="Final Round"
-                onPress={handleFinalRound}
-                variant="success"
-              />
-            ) : (
-              <ActionButton
-                title="Next Round"
-                onPress={handleNextRound}
-                variant="success"
-              />
             )}
           </View>
         </View>
@@ -234,5 +240,15 @@ const styles = StyleSheet.create({
   waitingText: {
     color: Colors.textSecondary,
     fontStyle: "italic",
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  loadingText: {
+    color: Colors.textSecondary,
+    marginTop: 16,
+    fontSize: 18,
   },
 });

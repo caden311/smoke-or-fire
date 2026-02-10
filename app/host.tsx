@@ -4,7 +4,7 @@ import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useMultiplayer } from "../src/context/MultiplayerContext";
-import { useGame } from "../src/context/GameContext";
+import { useRemoteGame } from "../src/context/RemoteGameContext";
 import ActionButton from "../src/components/ActionButton";
 import { Colors } from "../constants/Colors";
 import { useResponsive } from "../src/hooks/useResponsive";
@@ -20,19 +20,22 @@ export default function HostLobby() {
     connectionStatus,
     leaveGame,
     startMultiplayerGame,
-    syncedGameState,
   } = useMultiplayer();
-  const { dispatch } = useGame();
+  const { state: remoteState } = useRemoteGame();
 
-  // When game starts (status changes to 'playing'), navigate to game
+  // When game state appears in Firebase, navigate to game
   useEffect(() => {
-    if (room?.status === "playing" && syncedGameState) {
-      // Sync the game state to local context
-      dispatch({ type: "RESET" });
-      // The game state will be synced via MultiplayerContext
+    console.log('[HOST] Navigation check', {
+      roomStatus: room?.status,
+      hasRemoteState: !!remoteState,
+      remotePhase: remoteState?.phase,
+    });
+
+    // Navigate when we have game state with playing phase
+    if (remoteState?.phase === "playing") {
       router.replace("/game");
     }
-  }, [room?.status, syncedGameState, dispatch]);
+  }, [room?.status, remoteState?.phase]);
 
   const handleStartGame = async () => {
     if (players.length < 2) return;
@@ -56,7 +59,14 @@ export default function HostLobby() {
       pyramidResults: [],
     };
 
+    console.log('[HOST] Starting game with state:', {
+      players: initialState.players.length,
+      deckSize: initialState.deck.length,
+      phase: initialState.phase,
+    });
+
     await startMultiplayerGame(initialState);
+    // Navigation will happen via effect when Firebase updates
   };
 
   const handleLeave = async () => {

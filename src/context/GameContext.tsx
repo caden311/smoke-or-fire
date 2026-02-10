@@ -11,7 +11,7 @@ const PYRAMID_ROW_RULES: { amount: number; action: "give" | "take" }[] = [
   { amount: 5, action: "give" },
 ];
 
-const initialState: GameState = {
+export const initialState: GameState = {
   players: [],
   deck: [],
   currentPlayerIndex: 0,
@@ -30,7 +30,7 @@ const initialState: GameState = {
 
 let nextPlayerId = 0;
 
-function gameReducer(state: GameState, action: GameAction): GameState {
+export function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     case "ADD_PLAYER": {
       const trimmed = action.name.trim();
@@ -67,7 +67,30 @@ function gameReducer(state: GameState, action: GameAction): GameState {
     }
 
     case "MAKE_GUESS": {
-      if (state.phase !== "playing" || state.currentCard !== null) return state;
+      console.log('[GC] MAKE_GUESS guard check', {
+        phase: state.phase,
+        currentCard: state.currentCard,
+        currentPlayerIndex: state.currentPlayerIndex,
+        roundType: state.roundType,
+        playerCardsLengths: state.playerCards?.map(cards => cards.length),
+      });
+
+      // Use loose equality (!=) to catch both null AND undefined from Firebase
+      if (state.phase !== "playing" || state.currentCard != null) {
+        console.log('[GC] MAKE_GUESS guard FAILED - phase or currentCard');
+        return state;
+      }
+
+      // Defensive guard for playerCards in rounds that need previous cards
+      if (state.roundType === "higher_or_lower" || state.roundType === "inside_or_outside") {
+        const prevCards = state.playerCards?.[state.currentPlayerIndex];
+        if (!prevCards || prevCards.length === 0) {
+          console.error('[GC] MAKE_GUESS: playerCards missing/empty for player', state.currentPlayerIndex, 'round type', state.roundType);
+          console.error('[GC] Full playerCards:', JSON.stringify(state.playerCards));
+          return state;
+        }
+      }
+
       const [card, remaining] = drawCard(state.deck);
 
       let isCorrect: boolean;
@@ -110,6 +133,12 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         i === state.currentPlayerIndex ? [...cards, card] : cards
       );
 
+      console.log('[GC] MAKE_GUESS', {
+        drawnCard: `${card.value} of ${card.suit}`,
+        isCorrect,
+        playerIndex: state.currentPlayerIndex,
+      });
+
       return {
         ...state,
         deck: remaining,
@@ -139,22 +168,30 @@ function gameReducer(state: GameState, action: GameAction): GameState {
     }
 
     case "NEXT_ROUND": {
+      console.log('[GC] NEXT_ROUND before', {
+        playerCardsLengths: state.playerCards?.map(cards => cards.length),
+        roundNumber: state.roundNumber,
+      });
       const nextRoundNumber = state.roundNumber + 1;
       const roundTypeLookup: Record<number, GameState["roundType"]> = {
         2: "higher_or_lower",
         3: "inside_or_outside",
         4: "guess_the_suit",
       };
-      return {
+      const newState: GameState = {
         ...state,
         currentPlayerIndex: 0,
         roundNumber: nextRoundNumber,
         roundType: roundTypeLookup[nextRoundNumber] ?? "smoke_or_fire",
-        phase: "playing",
+        phase: "playing" as const,
         turnResults: [],
         currentCard: null,
         currentGuess: null,
       };
+      console.log('[GC] NEXT_ROUND after', {
+        playerCardsLengths: newState.playerCards?.map(cards => cards.length),
+      });
+      return newState;
     }
 
     case "START_PYRAMID": {

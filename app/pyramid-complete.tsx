@@ -1,35 +1,41 @@
-import React, { useEffect } from "react";
-import { View, Text, StyleSheet, ScrollView } from "react-native";
+import React from "react";
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Animated, { FadeInDown } from "react-native-reanimated";
-import { useGame } from "../src/context/GameContext";
 import { useMultiplayer } from "../src/context/MultiplayerContext";
+import { useGameState } from "../src/hooks/useGameState";
+import { useGameActions } from "../src/hooks/useGameActions";
 import ActionButton from "../src/components/ActionButton";
 import { Colors } from "../constants/Colors";
 import { useResponsive } from "../src/hooks/useResponsive";
 
 export default function PyramidComplete() {
-  const { state, dispatch } = useGame();
-  const { isMultiplayer, syncedGameState, leaveGame } = useMultiplayer();
+  const { leaveGame } = useMultiplayer();
+  const { state, isLoading } = useGameState();
+  const { dispatch } = useGameActions();
   const { fs, sw, sh } = useResponsive();
 
-  // Use synced state in multiplayer mode
-  const effectiveState = isMultiplayer && syncedGameState ? syncedGameState : state;
-
-  // Sync game state from Firebase in multiplayer mode
-  useEffect(() => {
-    if (isMultiplayer && syncedGameState) {
-      dispatch({ type: "SYNC_STATE", state: syncedGameState });
-    }
-  }, [isMultiplayer, syncedGameState, dispatch]);
+  // Show loading state
+  if (isLoading || !state) {
+    return (
+      <LinearGradient colors={[Colors.background, "#12061F"]} style={styles.gradient}>
+        <SafeAreaView style={styles.container}>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={Colors.textSecondary} />
+            <Text style={styles.loadingText}>Loading results...</Text>
+          </View>
+        </SafeAreaView>
+      </LinearGradient>
+    );
+  }
 
   // Compute per-player totals
-  const playerTotals = effectiveState.players.map((player) => {
+  const playerTotals = state.players.map((player) => {
     let gave = 0;
     let took = 0;
-    for (const result of effectiveState.pyramidResults) {
+    for (const result of state.pyramidResults) {
       for (const match of result.matches) {
         if (match.player.id === player.id) {
           if (match.action === "give") {
@@ -44,10 +50,8 @@ export default function PyramidComplete() {
   });
 
   const handlePlayAgain = async () => {
-    if (isMultiplayer) {
-      await leaveGame();
-    }
-    dispatch({ type: "RESET" });
+    await leaveGame();
+    await dispatch({ type: "RESET" });
     router.replace("/");
   };
 
@@ -156,5 +160,15 @@ const styles = StyleSheet.create({
   footer: {
     paddingVertical: 20,
     alignItems: "center",
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  loadingText: {
+    color: Colors.textSecondary,
+    marginTop: 16,
+    fontSize: 18,
   },
 });

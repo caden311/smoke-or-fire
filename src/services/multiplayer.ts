@@ -29,15 +29,36 @@ function normalizeGameState(state: GameState | null): GameState | null {
     return Object.values(val);
   };
 
+  // Normalize players first so we know how many playerCards arrays we need
+  const players = toArray(state.players);
+  const rawPlayerCards = toArray(state.playerCards);
+  // Ensure we have one array per player, even if Firebase deleted empty arrays
+  const normalizedPlayerCards = players.map((_, index) =>
+    toArray(rawPlayerCards[index])
+  );
+
+  console.log('[FB] normalizeGameState', {
+    rawPlayerCards: typeof state.playerCards,
+    rawPlayerCardsKeys: state.playerCards ? Object.keys(state.playerCards) : null,
+    playerCount: players.length,
+    normalizedLengths: normalizedPlayerCards.map(cards => cards.length),
+  });
+
   return {
     ...state,
+    // Normalize currentCard/currentGuess to null (Firebase can return undefined)
+    currentCard: state.currentCard ?? null,
+    currentGuess: state.currentGuess ?? null,
     players: toArray(state.players),
     deck: toArray(state.deck),
     turnResults: toArray(state.turnResults),
-    playerCards: toArray(state.playerCards).map(cards => toArray(cards)),
+    playerCards: normalizedPlayerCards,
     pyramidCards: toArray(state.pyramidCards),
     pyramidRevealed: toArray(state.pyramidRevealed),
-    pyramidResults: toArray(state.pyramidResults),
+    pyramidResults: toArray(state.pyramidResults).map(result => ({
+      ...result,
+      matches: toArray(result.matches),
+    })),
   };
 }
 
@@ -171,6 +192,7 @@ export async function startGame(
   hostId: string,
   initialGameState: GameState
 ): Promise<void> {
+  console.log('[FB] startGame', { roomCode, hostId, phase: initialGameState.phase });
   if (!isFirebaseConfigured()) {
     throw new Error("Firebase not configured");
   }
@@ -196,6 +218,13 @@ export async function updateGameState(
   roomCode: string,
   gameState: GameState
 ): Promise<void> {
+  console.log('[FB] updateGameState', {
+    roomCode,
+    phase: gameState.phase,
+    currentCard: gameState.currentCard ? `${gameState.currentCard.value} of ${gameState.currentCard.suit}` : null,
+    playerCardsLengths: gameState.playerCards?.map(cards => cards.length),
+    roundNumber: gameState.roundNumber,
+  });
   if (!isFirebaseConfigured()) return;
   await set(gameStateRef(roomCode), gameState);
 }
@@ -206,6 +235,7 @@ export async function submitAction(
   playerId: string,
   action: GameAction
 ): Promise<void> {
+  console.log('[FB] submitAction', { roomCode, playerId, action });
   if (!isFirebaseConfigured()) return;
   await set(pendingActionRef(roomCode), {
     playerId,
@@ -252,6 +282,12 @@ export function subscribeToGameState(
   }
 
   const unsubscribe = onValue(gameStateRef(roomCode), (snapshot) => {
+    console.log('[FB] gameState listener fired', {
+      exists: snapshot.exists(),
+      currentCard: snapshot.exists() && snapshot.val()?.currentCard
+        ? `${snapshot.val().currentCard.value} of ${snapshot.val().currentCard.suit}`
+        : null,
+    });
     if (snapshot.exists()) {
       callback(normalizeGameState(snapshot.val() as GameState));
     } else {
