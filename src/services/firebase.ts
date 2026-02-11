@@ -81,6 +81,7 @@ export function configRef(): DatabaseReference {
 
 export interface RemoteConfig {
   multiplayerEnabled: boolean;
+  adsEnabled: boolean;
 }
 
 export async function fetchRemoteConfig(): Promise<RemoteConfig> {
@@ -90,12 +91,14 @@ export async function fetchRemoteConfig(): Promise<RemoteConfig> {
     const val = snapshot.val();
     console.log("[FB] Remote config raw value:", val);
     if (!val) {
-      return { multiplayerEnabled: true };
+      return { multiplayerEnabled: true, adsEnabled: false };
     }
     // Handle string "false"/"true" from Firebase console
-    const enabled = val.multiplayerEnabled;
+    const multiplayerEnabled = val.multiplayerEnabled;
+    const adsEnabled = val.adsEnabled;
     return {
-      multiplayerEnabled: enabled === true || enabled === "true",
+      multiplayerEnabled: multiplayerEnabled === true || multiplayerEnabled === "true",
+      adsEnabled: adsEnabled === true || adsEnabled === "true",
     };
   } catch (error) {
     console.error("[FB] Failed to fetch remote config:", error);

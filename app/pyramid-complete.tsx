@@ -7,6 +7,7 @@ import Animated, { FadeInDown } from "react-native-reanimated";
 import { useMultiplayer } from "../src/context/MultiplayerContext";
 import { useGameState } from "../src/hooks/useGameState";
 import { useGameActions } from "../src/hooks/useGameActions";
+import { useAds } from "../src/context/AdContext";
 import ActionButton from "../src/components/ActionButton";
 import { Colors } from "../constants/Colors";
 import { useResponsive } from "../src/hooks/useResponsive";
@@ -15,6 +16,7 @@ export default function PyramidComplete() {
   const { leaveGame } = useMultiplayer();
   const { state, isLoading } = useGameState();
   const { dispatch } = useGameActions();
+  const { showInterstitialAd } = useAds();
   const { fs, sw, sh } = useResponsive();
 
   // Show loading state
@@ -68,6 +70,7 @@ export default function PyramidComplete() {
   );
 
   const handlePlayAgain = async () => {
+    await showInterstitialAd();
     await leaveGame();
     await dispatch({ type: "RESET" });
     router.replace("/");
