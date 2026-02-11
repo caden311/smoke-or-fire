@@ -242,6 +242,7 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     borderWidth: 1,
     borderColor: Colors.surfaceLight,
+    letterSpacing: 0,
   },
   errorMessage: {
     backgroundColor: "rgba(230, 57, 70, 0.15)",
