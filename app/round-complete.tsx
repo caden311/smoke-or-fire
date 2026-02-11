@@ -11,6 +11,7 @@ import ActionButton from "../src/components/ActionButton";
 import { Colors } from "../constants/Colors";
 import { SUIT_SYMBOLS } from "../constants/Cards";
 import { useResponsive } from "../src/hooks/useResponsive";
+import { DrinkAssignment } from "../src/types";
 
 const GUESS_LABELS: Record<string, string> = {
   smoke: "Smoke",
@@ -29,7 +30,7 @@ export default function RoundComplete() {
   const { isMultiplayer, isHost } = useMultiplayer();
   const { state, isLoading } = useGameState();
   const { dispatch } = useGameActions();
-  const { fs, sw, sh } = useResponsive();
+  const { fs, sw, sh, s } = useResponsive();
 
   // Navigate when phase changes
   useEffect(() => {
@@ -64,6 +65,13 @@ export default function RoundComplete() {
   const correctCount = state.turnResults.filter((r) => r.correct).length;
   const totalPlayers = state.turnResults.length;
   const isLastRound = state.roundNumber >= 4;
+
+  // Filter drink assignments for this round (multiplayer only)
+  const roundDrinkAssignments: DrinkAssignment[] = isMultiplayer
+    ? (state.pendingDrinkAssignments || []).filter(
+        (a) => a.roundNumber === state.roundNumber && a.amount > 0
+      )
+    : [];
 
   const handleFinalRound = async () => {
     await dispatch({ type: "START_PYRAMID" });
@@ -141,6 +149,29 @@ export default function RoundComplete() {
                 </Animated.View>
               );
             })}
+
+            {/* Drinks Given Section - Multiplayer Only */}
+            {isMultiplayer && roundDrinkAssignments.length > 0 && (
+              <View style={[styles.drinksSection, { marginTop: sh(20), paddingTop: sh(16) }]}>
+                <Text style={[styles.drinksSectionTitle, { fontSize: fs(14), marginBottom: sh(12) }]}>
+                  Drinks Given
+                </Text>
+                {roundDrinkAssignments.map((assignment, index) => (
+                  <Animated.View
+                    key={assignment.id}
+                    entering={FadeInDown.delay(state.turnResults.length * 100 + index * 80).duration(250)}
+                    style={[styles.drinkRow, { paddingHorizontal: sw(16), paddingVertical: sh(10) }]}
+                  >
+                    <Text style={[styles.drinkText, { fontSize: fs(16) }]}>
+                      {assignment.fromPlayerName} → {assignment.toPlayerName}
+                    </Text>
+                    <Text style={[styles.drinkAmount, { fontSize: fs(14) }]}>
+                      {assignment.amount} {assignment.amount === 1 ? "drink" : "drinks"}
+                    </Text>
+                  </Animated.View>
+                ))}
+              </View>
+            )}
           </ScrollView>
 
           {/* Actions */}
@@ -250,5 +281,32 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     marginTop: 16,
     fontSize: 18,
+  },
+  drinksSection: {
+    borderTopWidth: 1,
+    borderTopColor: Colors.gray,
+  },
+  drinksSectionTitle: {
+    color: Colors.textSecondary,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 2,
+    textAlign: "center",
+  },
+  drinkRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: Colors.surface,
+    borderRadius: 10,
+    marginBottom: 6,
+  },
+  drinkText: {
+    color: Colors.textPrimary,
+    fontWeight: "600",
+  },
+  drinkAmount: {
+    color: Colors.gold,
+    fontWeight: "700",
   },
 });

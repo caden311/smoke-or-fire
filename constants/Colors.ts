@@ -6,6 +6,7 @@ export const Colors = {
   white: "#F0F0F0",
   gray: "#888888",
   green: "#2ECC71",
+  gold: "#F4C430",
   cardFace: "#FFFEF2",
   cardBack: "#1B3A4B",
   cardBackAccent: "#264653",

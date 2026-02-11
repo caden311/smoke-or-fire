@@ -26,6 +26,7 @@ export const initialState: GameState = {
   pyramidRevealed: [],
   pyramidCurrentRow: 0,
   pyramidResults: [],
+  pendingDrinkAssignments: [],
 };
 
 let nextPlayerId = 0;
@@ -63,6 +64,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         currentGuess: null,
         roundType: "smoke_or_fire",
         playerCards: state.players.map(() => []),
+        pendingDrinkAssignments: [],
       };
     }
 
@@ -258,6 +260,35 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         pyramidResults: [...state.pyramidResults, ...newResults],
         pyramidCurrentRow: row + 1,
       };
+    }
+
+    case "ASSIGN_DRINKS": {
+      let newState: GameState = {
+        ...state,
+        pendingDrinkAssignments: [...state.pendingDrinkAssignments, ...action.assignments],
+      };
+
+      // Optionally advance turn (for atomic drink + turn advance in multiplayer)
+      if (action.advanceTurn) {
+        const nextIndex = state.currentPlayerIndex + 1;
+        if (nextIndex >= state.players.length) {
+          newState = {
+            ...newState,
+            phase: "round-complete",
+            currentCard: null,
+            currentGuess: null,
+          };
+        } else {
+          newState = {
+            ...newState,
+            currentPlayerIndex: nextIndex,
+            currentCard: null,
+            currentGuess: null,
+          };
+        }
+      }
+
+      return newState;
     }
 
     case "RESET":

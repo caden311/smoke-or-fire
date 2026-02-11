@@ -12,11 +12,12 @@ import CardFace from "../src/components/CardFace";
 import ActionButton from "../src/components/ActionButton";
 import ResultBanner from "../src/components/ResultBanner";
 import { Colors } from "../constants/Colors";
-import { Guess, GameState } from "../src/types";
+import { Guess, GameState, DrinkAssignment } from "../src/types";
 import { getCardNumericValue } from "../src/utils/deck";
 import { successHaptic, errorHaptic, mediumHaptic } from "../src/utils/haptics";
 import { SUIT_SYMBOLS } from "../constants/Cards";
 import DrawnCardsModal from "../src/components/DrawnCardsModal";
+import GiveDrinksModal from "../src/components/GiveDrinksModal";
 import { useResponsive } from "../src/hooks/useResponsive";
 
 // Validate that game state has all required data before rendering
@@ -30,12 +31,13 @@ function isGameStateReady(state: GameState | null): state is GameState {
 }
 
 export default function GameRound() {
-  const { isMultiplayer, isHost } = useMultiplayer();
+  const { isMultiplayer, isHost, playerId } = useMultiplayer();
   const { state, isLoading, isMyTurn, currentPlayer } = useGameState();
   const { dispatch } = useGameActions();
 
   const [guessState, setGuessState] = useState<'idle' | 'submitting' | 'guessed'>('idle');
   const [showDrawnCards, setShowDrawnCards] = useState(false);
+  const [showGiveDrinksModal, setShowGiveDrinksModal] = useState(false);
   const { fs, sw, sh, s, previousCardScale, previousCardWidth, previousCardHeight, contentPadding, isSmallScreen } = useResponsive();
 
   // Track player/round changes to reset guess state
@@ -122,6 +124,12 @@ export default function GameRound() {
   const isLastPlayer = state.currentPlayerIndex === state.players.length - 1;
   const lastResult = state.turnResults[state.turnResults.length - 1] ?? null;
 
+  // Check if current player won (correct guess) for give drinks feature
+  const didWinThisTurn = lastResult?.correct === true;
+
+  // Other players for drink assignment (exclude current player)
+  const otherPlayers = state.players.filter(p => p.id !== currentPlayer?.id);
+
   // Card flip logic: show card when it exists in state
   const shouldShowFlipped = state.currentCard != null;
 
@@ -158,6 +166,26 @@ export default function GameRound() {
 
     await dispatch({ type: "NEXT_TURN" });
     // Navigation handled by Effect 1 when phase changes
+  };
+
+  const handleGiveDrinks = () => {
+    setShowGiveDrinksModal(true);
+  };
+
+  const handleConfirmDrinks = async (assignments: DrinkAssignment[]) => {
+    setShowGiveDrinksModal(false);
+    // Combine drink assignment and turn advance into single action
+    // This prevents the non-host pendingAction overwrite bug in multiplayer
+    await dispatch({
+      type: "ASSIGN_DRINKS",
+      assignments,
+      advanceTurn: true,
+    });
+  };
+
+  const handleSkipDrinks = async () => {
+    setShowGiveDrinksModal(false);
+    await dispatch({ type: "NEXT_TURN" });
   };
 
   // Determine what UI to show
@@ -382,11 +410,20 @@ export default function GameRound() {
                 />
               )}
               <View style={styles.nextButtonContainer}>
-                <ActionButton
-                  title={isLastPlayer ? "See Results" : "Next Player"}
-                  variant="primary"
-                  onPress={handleNextPlayer}
-                />
+                {/* In multiplayer, winning player can give drinks */}
+                {isMultiplayer && didWinThisTurn && isMyTurn && otherPlayers.length > 0 ? (
+                  <ActionButton
+                    title="Give Drinks"
+                    variant="primary"
+                    onPress={handleGiveDrinks}
+                  />
+                ) : (
+                  <ActionButton
+                    title={isLastPlayer ? "See Results" : "Next Player"}
+                    variant="primary"
+                    onPress={handleNextPlayer}
+                  />
+                )}
               </View>
             </View>
           )}
@@ -399,6 +436,19 @@ export default function GameRound() {
         playerCards={state.playerCards}
         players={state.players}
       />
+
+      {/* Give Drinks Modal (multiplayer only) */}
+      {isMultiplayer && currentPlayer && (
+        <GiveDrinksModal
+          visible={showGiveDrinksModal}
+          totalDrinks={1}
+          currentPlayer={currentPlayer}
+          otherPlayers={otherPlayers}
+          roundNumber={state.roundNumber}
+          onConfirm={handleConfirmDrinks}
+          onSkip={handleSkipDrinks}
+        />
+      )}
     </LinearGradient>
   );
 }
