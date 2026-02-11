@@ -1,3 +1,13 @@
+export interface GameSettings {
+  roundDrinks: [number, number, number, number];
+  pyramidDrinks: [number, number, number, number, number];
+}
+
+export const DEFAULT_GAME_SETTINGS: GameSettings = {
+  roundDrinks: [1, 1, 1, 1],
+  pyramidDrinks: [1, 2, 3, 4, 5],
+};
+
 export type Suit = "hearts" | "diamonds" | "clubs" | "spades";
 export type CardColor = "red" | "black";
 export type Value =
@@ -35,6 +45,7 @@ export interface TurnResult {
   guess: Guess;
   card: Card;
   correct: boolean;
+  drinks: number;
 }
 
 export type GamePhase = "registration" | "playing" | "round-complete" | "pyramid";
@@ -89,12 +100,13 @@ export interface GameState {
   pyramidResults: PyramidRevealResult[];
   pendingDrinkAssignments: DrinkAssignment[];
   pyramidPendingAssigners: PyramidPendingAssigner[];
+  settings: GameSettings;
 }
 
 export type GameAction =
   | { type: "ADD_PLAYER"; name: string }
   | { type: "REMOVE_PLAYER"; id: string }
-  | { type: "START_GAME" }
+  | { type: "START_GAME"; settings?: GameSettings }
   | { type: "MAKE_GUESS"; guess: Guess }
   | { type: "NEXT_TURN" }
   | { type: "NEXT_ROUND" }
@@ -102,4 +114,5 @@ export type GameAction =
   | { type: "REVEAL_PYRAMID_ROW" }
   | { type: "RESET" }
   | { type: "SYNC_STATE"; state: GameState }
-  | { type: "ASSIGN_DRINKS"; assignments: DrinkAssignment[]; advanceTurn?: boolean; completePyramidAssignment?: string };
+  | { type: "ASSIGN_DRINKS"; assignments: DrinkAssignment[]; advanceTurn?: boolean; completePyramidAssignment?: string }
+  | { type: "SET_SETTINGS"; settings: GameSettings };

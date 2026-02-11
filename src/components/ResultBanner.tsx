@@ -13,12 +13,14 @@ interface ResultBannerProps {
   correct: boolean;
   guess: Guess;
   card: Card;
+  drinks: number;
 }
 
 export default function ResultBanner({
   correct,
   guess,
   card,
+  drinks,
 }: ResultBannerProps) {
   const { fs, s } = useResponsive();
   const suitSymbol = SUIT_SYMBOLS[card.suit];
@@ -56,7 +58,9 @@ export default function ResultBanner({
         {correct ? "CORRECT!" : "WRONG!"}
       </Animated.Text>
       <Text style={[styles.actionText, { fontSize: fs(18) }]}>
-        {correct ? "Give a drink to someone!" : "Take a drink!"}
+        {correct
+          ? `Give ${drinks} drink${drinks !== 1 ? "s" : ""} to someone!`
+          : `Take ${drinks} drink${drinks !== 1 ? "s" : ""}!`}
       </Text>
       <Text style={[styles.detailText, { fontSize: fs(13) }]}>
         You guessed {guessLabel} — Card was {cardLabel}

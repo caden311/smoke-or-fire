@@ -5,6 +5,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useMultiplayer } from "../src/context/MultiplayerContext";
 import { useRemoteGame } from "../src/context/RemoteGameContext";
+import { useSettings } from "../src/context/SettingsContext";
 import ActionButton from "../src/components/ActionButton";
 import { Colors } from "../constants/Colors";
 import { useResponsive } from "../src/hooks/useResponsive";
@@ -23,6 +24,7 @@ export default function HostLobby() {
     startMultiplayerGame,
   } = useMultiplayer();
   const { state: remoteState } = useRemoteGame();
+  const { settings } = useSettings();
 
   // When game state appears in Firebase, navigate to game
   useEffect(() => {
@@ -60,12 +62,14 @@ export default function HostLobby() {
       pyramidResults: [],
       pendingDrinkAssignments: [],
       pyramidPendingAssigners: [],
+      settings,
     };
 
     console.log('[HOST] Starting game with state:', {
       players: initialState.players.length,
       deckSize: initialState.deck.length,
       phase: initialState.phase,
+      settings: initialState.settings,
     });
 
     await startMultiplayerGame(initialState);

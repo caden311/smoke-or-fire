@@ -142,7 +142,7 @@ export default function RoundComplete() {
                       ]}
                     >
                       <Text style={[styles.resultBadgeText, { fontSize: fs(12) }]}>
-                        {result.correct ? "GAVE" : "TOOK"}
+                        {result.correct ? "GAVE" : "TOOK"} {result.drinks ?? 1}
                       </Text>
                     </View>
                   </View>

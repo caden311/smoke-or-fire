@@ -407,6 +407,7 @@ export default function GameRound() {
                   correct={lastResult.correct}
                   guess={lastResult.guess}
                   card={lastResult.card}
+                  drinks={lastResult.drinks}
                 />
               )}
               <View style={styles.nextButtonContainer}>

@@ -75,4 +75,32 @@ export function pendingActionRef(roomCode: string): DatabaseReference {
   return ref(getDb(), `rooms/${roomCode}/pendingAction`);
 }
 
+export function configRef(): DatabaseReference {
+  return ref(getDb(), "config");
+}
+
+export interface RemoteConfig {
+  multiplayerEnabled: boolean;
+}
+
+export async function fetchRemoteConfig(): Promise<RemoteConfig> {
+  try {
+    console.log("[FB] Fetching remote config...");
+    const snapshot = await get(configRef());
+    const val = snapshot.val();
+    console.log("[FB] Remote config raw value:", val);
+    if (!val) {
+      return { multiplayerEnabled: true };
+    }
+    // Handle string "false"/"true" from Firebase console
+    const enabled = val.multiplayerEnabled;
+    return {
+      multiplayerEnabled: enabled === true || enabled === "true",
+    };
+  } catch (error) {
+    console.error("[FB] Failed to fetch remote config:", error);
+    throw error; // Re-throw so caller's .catch() still works
+  }
+}
+
 export { ref, set, get, onValue, remove, update, push, off };

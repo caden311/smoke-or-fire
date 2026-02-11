@@ -7,7 +7,7 @@ import React, {
   useRef,
 } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { isFirebaseConfigured } from "../services/firebase";
+import { isFirebaseConfigured, fetchRemoteConfig } from "../services/firebase";
 import {
   Room,
   RoomPlayer,
@@ -56,10 +56,11 @@ export function MultiplayerProvider({ children }: { children: React.ReactNode })
   const [room, setRoom] = useState<Room | null>(null);
   const [isHost, setIsHost] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<"disconnected" | "connecting" | "connected">("disconnected");
+  const [multiplayerEnabled, setMultiplayerEnabled] = useState(true);
 
   const unsubscribeRoomRef = useRef<(() => void) | null>(null);
 
-  const isFirebaseReady = isFirebaseConfigured();
+  const isFirebaseReady = isFirebaseConfigured() && multiplayerEnabled;
   const isMultiplayer = roomCode !== null;
 
   // Initialize player ID
@@ -78,6 +79,22 @@ export function MultiplayerProvider({ children }: { children: React.ReactNode })
       }
     }
     loadOrCreatePlayerId();
+  }, []);
+
+  // Fetch remote config for feature flags
+  useEffect(() => {
+    console.log("[MP] Checking remote config, isFirebaseConfigured:", isFirebaseConfigured());
+    if (isFirebaseConfigured()) {
+      fetchRemoteConfig()
+        .then((config) => {
+          console.log("[MP] Remote config fetched", config);
+          setMultiplayerEnabled(config.multiplayerEnabled);
+        })
+        .catch((error) => {
+          console.warn("[MP] Failed to fetch remote config, defaulting to enabled", error);
+          setMultiplayerEnabled(true);
+        });
+    }
   }, []);
 
   // Cleanup subscription when leaving room

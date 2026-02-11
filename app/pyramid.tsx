@@ -15,7 +15,7 @@ import { useResponsive } from "../src/hooks/useResponsive";
 import { DrinkAssignment } from "../src/types";
 
 const PYRAMID_ROWS = [[0], [1, 2], [3, 4, 5], [6, 7], [8]];
-const ROW_LABELS = ["GIVE 1", "TAKE 2", "GIVE 3", "TAKE 4", "GIVE 5"];
+const ROW_ACTIONS = ["GIVE", "TAKE", "GIVE", "TAKE", "GIVE"];
 
 export default function Pyramid() {
   const { isMultiplayer, isHost, playerId } = useMultiplayer();
@@ -200,8 +200,10 @@ export default function Pyramid() {
           <View style={[styles.pyramidContainer, { gap: sh(8) }]}>
             {PYRAMID_ROWS.map((rowIndices, rowIdx) => {
               const isActiveRow = rowIdx === state.pyramidCurrentRow;
-              const labelColor =
-                ROW_LABELS[rowIdx].startsWith("GIVE") ? Colors.green : Colors.red;
+              const rowAction = ROW_ACTIONS[rowIdx];
+              const rowDrinks = state.settings.pyramidDrinks[rowIdx] ?? (rowIdx + 1);
+              const rowLabel = `${rowAction} ${rowDrinks}`;
+              const labelColor = rowAction === "GIVE" ? Colors.green : Colors.red;
 
               const cardRow = (
                 <View
@@ -225,7 +227,7 @@ export default function Pyramid() {
               return (
                 <View key={rowIdx} style={styles.rowContainer}>
                   <Text style={[styles.rowLabel, { color: labelColor, fontSize: fs(11) }]}>
-                    {ROW_LABELS[rowIdx]}
+                    {rowLabel}
                   </Text>
                   {isActiveRow && !allRevealed && canInteract ? (
                     <Pressable onPress={() => handleRowPress(rowIdx)}>

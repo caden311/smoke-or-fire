@@ -13,7 +13,7 @@ import {
   getDb,
   ref,
 } from "./firebase";
-import { GameState, GameAction, Player, Card } from "../types";
+import { GameState, GameAction, Player, Card, DEFAULT_GAME_SETTINGS, GameSettings } from "../types";
 
 // Firebase doesn't store empty arrays - they come back as undefined
 // Firebase may also convert arrays to objects with numeric keys
@@ -44,6 +44,17 @@ function normalizeGameState(state: GameState | null): GameState | null {
     normalizedLengths: normalizedPlayerCards.map(cards => cards.length),
   });
 
+  // Normalize settings
+  const rawSettings = state.settings ?? DEFAULT_GAME_SETTINGS;
+  const normalizedSettings: GameSettings = {
+    roundDrinks: (toArray(rawSettings.roundDrinks).length === 4
+      ? toArray(rawSettings.roundDrinks)
+      : DEFAULT_GAME_SETTINGS.roundDrinks) as GameSettings["roundDrinks"],
+    pyramidDrinks: (toArray(rawSettings.pyramidDrinks).length === 5
+      ? toArray(rawSettings.pyramidDrinks)
+      : DEFAULT_GAME_SETTINGS.pyramidDrinks) as GameSettings["pyramidDrinks"],
+  };
+
   return {
     ...state,
     // Normalize currentCard/currentGuess to null (Firebase can return undefined)
@@ -61,6 +72,7 @@ function normalizeGameState(state: GameState | null): GameState | null {
     })),
     pendingDrinkAssignments: toArray(state.pendingDrinkAssignments),
     pyramidPendingAssigners: toArray(state.pyramidPendingAssigners),
+    settings: normalizedSettings,
   };
 }
 

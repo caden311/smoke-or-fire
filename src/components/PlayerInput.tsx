@@ -24,7 +24,7 @@ export default function PlayerInput({ onAdd }: PlayerInputProps) {
         style={styles.input}
         value={name}
         onChangeText={setName}
-        placeholder="Enter player name"
+        placeholder="Enter name"
         placeholderTextColor={Colors.gray}
         onSubmitEditing={handleAdd}
         returnKeyType="done"

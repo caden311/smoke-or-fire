@@ -1,10 +1,11 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, Pressable } from "react-native";
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useGame } from "../src/context/GameContext";
 import { useMultiplayer } from "../src/context/MultiplayerContext";
+import { useSettings } from "../src/context/SettingsContext";
 import PlayerInput from "../src/components/PlayerInput";
 import PlayerList from "../src/components/PlayerList";
 import ActionButton from "../src/components/ActionButton";
@@ -14,6 +15,7 @@ import { useResponsive } from "../src/hooks/useResponsive";
 export default function PlayerRegistration() {
   const { state, dispatch } = useGame();
   const { isFirebaseReady, hostGame } = useMultiplayer();
+  const { settings } = useSettings();
   const { fs, sh, sw } = useResponsive();
   const [isHosting, setIsHosting] = useState(false);
   const [hostName, setHostName] = useState("");
@@ -27,8 +29,12 @@ export default function PlayerRegistration() {
   };
 
   const handleStartGame = () => {
-    dispatch({ type: "START_GAME" });
+    dispatch({ type: "START_GAME", settings });
     router.replace("/game");
+  };
+
+  const handleOpenSettings = () => {
+    router.replace("/settings");
   };
 
   const handleHostGame = async () => {
@@ -70,7 +76,14 @@ export default function PlayerRegistration() {
             </Text>
           </View>
 
-          <PlayerInput onAdd={handleAddPlayer} />
+          <View style={styles.inputRow}>
+            <View style={{ flex: 1 }}>
+              <PlayerInput onAdd={handleAddPlayer} />
+            </View>
+            <Pressable onPress={handleOpenSettings} style={styles.settingsButton}>
+              <Text style={[styles.settingsIcon, { fontSize: fs(24) }]}>&#9881;</Text>
+            </Pressable>
+          </View>
 
           <PlayerList
             players={state.players}
@@ -139,6 +152,22 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: "center",
+  },
+  inputRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+  },
+  settingsButton: {
+    width: 50,
+    height: 50,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: Colors.surface,
+    borderRadius: 12,
+  },
+  settingsIcon: {
+    color: Colors.textSecondary,
   },
   title: {
     fontWeight: "900",

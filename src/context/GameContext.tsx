@@ -1,15 +1,9 @@
 import React, { createContext, useContext, useReducer } from "react";
-import { GameState, GameAction, TurnResult, PyramidMatch, PyramidRevealResult, PyramidPendingAssigner } from "../types";
+import { GameState, GameAction, TurnResult, PyramidMatch, PyramidRevealResult, PyramidPendingAssigner, DEFAULT_GAME_SETTINGS } from "../types";
 import { createDeck, shuffleDeck, drawCard, getCardNumericValue } from "../utils/deck";
 
 const PYRAMID_ROWS = [[0], [1, 2], [3, 4, 5], [6, 7], [8]];
-const PYRAMID_ROW_RULES: { amount: number; action: "give" | "take" }[] = [
-  { amount: 1, action: "give" },
-  { amount: 2, action: "take" },
-  { amount: 3, action: "give" },
-  { amount: 4, action: "take" },
-  { amount: 5, action: "give" },
-];
+const PYRAMID_ROW_ACTIONS: ("give" | "take")[] = ["give", "take", "give", "take", "give"];
 
 export const initialState: GameState = {
   players: [],
@@ -28,6 +22,7 @@ export const initialState: GameState = {
   pyramidResults: [],
   pendingDrinkAssignments: [],
   pyramidPendingAssigners: [],
+  settings: DEFAULT_GAME_SETTINGS,
 };
 
 let nextPlayerId = 0;
@@ -66,6 +61,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         roundType: "smoke_or_fire",
         playerCards: state.players.map(() => []),
         pendingDrinkAssignments: [],
+        settings: action.settings ?? state.settings,
       };
     }
 
@@ -125,11 +121,13 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
           (action.guess === "smoke" && card.color === "black");
       }
 
+      const drinks = state.settings.roundDrinks[state.roundNumber - 1] ?? 1;
       const result: TurnResult = {
         player: state.players[state.currentPlayerIndex],
         guess: action.guess,
         card,
         correct: isCorrect,
+        drinks,
       };
 
       const updatedPlayerCards = state.playerCards.map((cards, i) =>
@@ -221,7 +219,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       if (row >= PYRAMID_ROWS.length) return state;
 
       const currentRowIndices = PYRAMID_ROWS[row];
-      const { amount, action: rowAction } = PYRAMID_ROW_RULES[row];
+      const amount = state.settings.pyramidDrinks[row] ?? (row + 1);
+      const rowAction = PYRAMID_ROW_ACTIONS[row];
 
       const newRevealed = [...state.pyramidRevealed];
       const newResults: PyramidRevealResult[] = [];
@@ -346,6 +345,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
     case "SYNC_STATE":
       return { ...action.state };
+
+    case "SET_SETTINGS":
+      return { ...state, settings: action.settings };
 
     default:
       return state;
