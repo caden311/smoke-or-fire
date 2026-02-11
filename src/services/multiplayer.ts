@@ -60,6 +60,7 @@ function normalizeGameState(state: GameState | null): GameState | null {
       matches: toArray(result.matches),
     })),
     pendingDrinkAssignments: toArray(state.pendingDrinkAssignments),
+    pyramidPendingAssigners: toArray(state.pyramidPendingAssigners),
   };
 }
 

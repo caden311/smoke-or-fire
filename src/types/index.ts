@@ -66,6 +66,12 @@ export interface DrinkAssignment {
   roundNumber: number;
 }
 
+export interface PyramidPendingAssigner {
+  playerId: string;
+  playerName: string;
+  drinksToGive: number;
+}
+
 export interface GameState {
   players: Player[];
   deck: Card[];
@@ -82,6 +88,7 @@ export interface GameState {
   pyramidCurrentRow: number;
   pyramidResults: PyramidRevealResult[];
   pendingDrinkAssignments: DrinkAssignment[];
+  pyramidPendingAssigners: PyramidPendingAssigner[];
 }
 
 export type GameAction =
@@ -95,4 +102,4 @@ export type GameAction =
   | { type: "REVEAL_PYRAMID_ROW" }
   | { type: "RESET" }
   | { type: "SYNC_STATE"; state: GameState }
-  | { type: "ASSIGN_DRINKS"; assignments: DrinkAssignment[]; advanceTurn?: boolean };
+  | { type: "ASSIGN_DRINKS"; assignments: DrinkAssignment[]; advanceTurn?: boolean; completePyramidAssignment?: string };

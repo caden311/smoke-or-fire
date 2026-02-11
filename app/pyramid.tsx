@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { View, Text, Pressable, StyleSheet, ActivityIndicator } from "react-native";
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
@@ -8,21 +8,24 @@ import { useGameState } from "../src/hooks/useGameState";
 import { useGameActions } from "../src/hooks/useGameActions";
 import PyramidCard from "../src/components/PyramidCard";
 import PyramidResultModal from "../src/components/PyramidResultModal";
+import GiveDrinksModal from "../src/components/GiveDrinksModal";
 import ActionButton from "../src/components/ActionButton";
 import { Colors } from "../constants/Colors";
 import { useResponsive } from "../src/hooks/useResponsive";
+import { DrinkAssignment } from "../src/types";
 
 const PYRAMID_ROWS = [[0], [1, 2], [3, 4, 5], [6, 7], [8]];
 const ROW_LABELS = ["GIVE 1", "TAKE 2", "GIVE 3", "TAKE 4", "GIVE 5"];
 
 export default function Pyramid() {
-  const { isMultiplayer, isHost } = useMultiplayer();
+  const { isMultiplayer, isHost, playerId } = useMultiplayer();
   const { state, isLoading } = useGameState();
   const { dispatch } = useGameActions();
 
   const [showModal, setShowModal] = useState(false);
   const [flippingRow, setFlippingRow] = useState<number | null>(null);
   const [lastRevealedRow, setLastRevealedRow] = useState<number | null>(null);
+  const [showDrinkAssignment, setShowDrinkAssignment] = useState(false);
   const { fs, sw, sh } = useResponsive();
 
   // Track when pyramid row changes to show modal for non-host
@@ -45,6 +48,63 @@ export default function Pyramid() {
     prevCurrentRowRef.current = currentRow;
   }, [state?.pyramidCurrentRow, isMultiplayer, isHost]);
 
+  // Drink assignment state - all players with drinks can assign simultaneously
+  const inDrinkAssignmentPhase = state && state.pyramidPendingAssigners.length > 0;
+
+  // Find my entry in the pending assigners list
+  const myAssignerEntry = useMemo(() => {
+    if (!state || !inDrinkAssignmentPhase) return null;
+    // In local mode, use the first pending assigner (pass-and-play)
+    if (!isMultiplayer) {
+      return state.pyramidPendingAssigners[0] ?? null;
+    }
+    // In multiplayer, find my entry
+    return state.pyramidPendingAssigners.find(a => a.playerId === playerId) ?? null;
+  }, [state?.pyramidPendingAssigners, isMultiplayer, playerId, inDrinkAssignmentPhase]);
+
+  // I can assign if I'm in the pending assigners list
+  const isMyTurnToAssign = myAssignerEntry !== null;
+
+  const myDrinksToGive = myAssignerEntry?.drinksToGive ?? 0;
+
+  // Get current assigning player object (for the modal)
+  const currentAssigningPlayer = useMemo(() => {
+    if (!state || !myAssignerEntry) return null;
+    return state.players.find(p => p.id === myAssignerEntry.playerId) ?? null;
+  }, [state, myAssignerEntry]);
+
+  // Other players (excluding the one assigning drinks)
+  const otherPlayers = useMemo(() => {
+    if (!state || !myAssignerEntry) return [];
+    return state.players.filter(p => p.id !== myAssignerEntry.playerId);
+  }, [state, myAssignerEntry]);
+
+  // List of remaining assigners (for waiting message)
+  const remainingAssignerNames = useMemo(() => {
+    if (!state || !inDrinkAssignmentPhase) return [];
+    return state.pyramidPendingAssigners.map(a => a.playerName);
+  }, [state?.pyramidPendingAssigners, inDrinkAssignmentPhase]);
+
+  // All cards revealed and all drink assignments complete
+  const allRevealed = state?.pyramidRevealed.every(Boolean) ?? false;
+  const allAssignmentsComplete = allRevealed && state?.pyramidPendingAssigners.length === 0;
+
+  // Edge case: Show drink modal when all revealed but no result modal is showing
+  // This handles the case where a player has drinks to assign but the result modal
+  // was never shown to them (e.g., they're not the host and already dismissed their modal)
+  useEffect(() => {
+    if (allRevealed && isMyTurnToAssign && !showModal && !showDrinkAssignment) {
+      setShowDrinkAssignment(true);
+    }
+  }, [allRevealed, isMyTurnToAssign, showModal, showDrinkAssignment]);
+
+  // Navigate to results when all cards revealed and all assignments done
+  useEffect(() => {
+    if (allAssignmentsComplete) {
+      router.replace("/pyramid-complete");
+    }
+  }, [allAssignmentsComplete]);
+
   // Show loading state
   if (isLoading || !state) {
     return (
@@ -62,8 +122,6 @@ export default function Pyramid() {
   if (state.phase !== "pyramid") {
     return null;
   }
-
-  const allRevealed = state.pyramidRevealed.every(Boolean);
 
   const handleRowPress = async (rowIdx: number) => {
     if (flippingRow !== null) return;
@@ -86,10 +144,33 @@ export default function Pyramid() {
   const handleCloseModal = () => {
     setShowModal(false);
     setLastRevealedRow(null);
+
+    // After closing result modal, check if I need to assign drinks
+    // Small delay to ensure modal is fully dismissed before showing next one
+    if (isMyTurnToAssign && !showDrinkAssignment) {
+      setTimeout(() => {
+        setShowDrinkAssignment(true);
+      }, 100);
+    }
   };
 
   const handleSeeResults = () => {
     router.replace("/pyramid-complete");
+  };
+
+  const handleConfirmDrinks = async (assignments: DrinkAssignment[]) => {
+    const myPlayerId = myAssignerEntry?.playerId;
+    console.log('[PYRAMID] Confirming drink assignments', {
+      assignmentCount: assignments.length,
+      playerId: myPlayerId,
+      remainingAssigners: state?.pyramidPendingAssigners.length,
+    });
+    setShowDrinkAssignment(false);
+    await dispatch({
+      type: "ASSIGN_DRINKS",
+      assignments,
+      completePyramidAssignment: myPlayerId,
+    });
   };
 
   // Filter results for the last revealed row
@@ -158,14 +239,26 @@ export default function Pyramid() {
             })}
           </View>
 
-          {/* See Results button */}
+          {/* Footer: Drink assignment or See Results */}
           {allRevealed && (
             <View style={styles.footer}>
-              <ActionButton
-                title="See Results"
-                variant="primary"
-                onPress={handleSeeResults}
-              />
+              {inDrinkAssignmentPhase ? (
+                // Show waiting message if I'm not assigning (multiplayer only)
+                !isMyTurnToAssign && remainingAssignerNames.length > 0 && (
+                  <View style={styles.waitingContainer}>
+                    <Text style={[styles.waitingText, { fontSize: fs(16) }]}>
+                      Waiting for {remainingAssignerNames.join(", ")} to assign drinks...
+                    </Text>
+                  </View>
+                )
+              ) : (
+                // No drinks to assign - show results button (shouldn't normally be visible due to auto-navigation)
+                <ActionButton
+                  title="See Results"
+                  variant="primary"
+                  onPress={handleSeeResults}
+                />
+              )}
             </View>
           )}
         </View>
@@ -176,6 +269,19 @@ export default function Pyramid() {
         results={modalResults}
         onClose={handleCloseModal}
       />
+
+      {currentAssigningPlayer && (
+        <GiveDrinksModal
+          visible={showDrinkAssignment && isMyTurnToAssign}
+          totalDrinks={myDrinksToGive}
+          currentPlayer={currentAssigningPlayer}
+          otherPlayers={otherPlayers}
+          roundNumber={5}
+          onConfirm={handleConfirmDrinks}
+          onSkip={() => {}}
+          allowSkip={false}
+        />
+      )}
     </LinearGradient>
   );
 }
@@ -241,5 +347,14 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     marginTop: 16,
     fontSize: 18,
+  },
+  waitingContainer: {
+    alignItems: "center",
+    paddingHorizontal: 16,
+  },
+  waitingText: {
+    color: Colors.textSecondary,
+    textAlign: "center",
+    fontWeight: "600",
   },
 });

@@ -59,6 +59,7 @@ export default function HostLobby() {
       pyramidCurrentRow: 0,
       pyramidResults: [],
       pendingDrinkAssignments: [],
+      pyramidPendingAssigners: [],
     };
 
     console.log('[HOST] Starting game with state:', {

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer } from "react";
-import { GameState, GameAction, TurnResult, PyramidMatch, PyramidRevealResult } from "../types";
+import { GameState, GameAction, TurnResult, PyramidMatch, PyramidRevealResult, PyramidPendingAssigner } from "../types";
 import { createDeck, shuffleDeck, drawCard, getCardNumericValue } from "../utils/deck";
 
 const PYRAMID_ROWS = [[0], [1, 2], [3, 4, 5], [6, 7], [8]];
@@ -27,6 +27,7 @@ export const initialState: GameState = {
   pyramidCurrentRow: 0,
   pyramidResults: [],
   pendingDrinkAssignments: [],
+  pyramidPendingAssigners: [],
 };
 
 let nextPlayerId = 0;
@@ -254,11 +255,45 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         });
       }
 
+      const allResults = [...state.pyramidResults, ...newResults];
+      const isLastRow = row === PYRAMID_ROWS.length - 1;
+
+      // Build pending assigners list when last row is revealed
+      let pyramidPendingAssigners: PyramidPendingAssigner[] = [];
+
+      if (isLastRow) {
+        // Calculate total "give" drinks per player across all pyramid results
+        const playerGiveDrinks: Record<string, number> = {};
+        for (const result of allResults) {
+          for (const match of result.matches) {
+            if (match.action === "give") {
+              const playerId = match.player.id;
+              playerGiveDrinks[playerId] = (playerGiveDrinks[playerId] || 0) + match.drinks;
+            }
+          }
+        }
+
+        // Build list of players with drinks to give (all can assign simultaneously)
+        pyramidPendingAssigners = state.players
+          .filter((player) => playerGiveDrinks[player.id] > 0)
+          .map((player) => ({
+            playerId: player.id,
+            playerName: player.name,
+            drinksToGive: playerGiveDrinks[player.id],
+          }));
+
+        console.log('[GC] REVEAL_PYRAMID_ROW: Built pending assigners', {
+          count: pyramidPendingAssigners.length,
+          assigners: pyramidPendingAssigners,
+        });
+      }
+
       return {
         ...state,
         pyramidRevealed: newRevealed,
-        pyramidResults: [...state.pyramidResults, ...newResults],
+        pyramidResults: allResults,
         pyramidCurrentRow: row + 1,
+        pyramidPendingAssigners,
       };
     }
 
@@ -286,6 +321,20 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
             currentGuess: null,
           };
         }
+      }
+
+      // Remove completed player from pending assigners (parallel assignment)
+      if (action.completePyramidAssignment) {
+        newState = {
+          ...newState,
+          pyramidPendingAssigners: state.pyramidPendingAssigners.filter(
+            (a) => a.playerId !== action.completePyramidAssignment
+          ),
+        };
+        console.log('[GC] ASSIGN_DRINKS: Removed player from pending assigners', {
+          removedPlayerId: action.completePyramidAssignment,
+          remainingCount: newState.pyramidPendingAssigners.length,
+        });
       }
 
       return newState;

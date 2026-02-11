@@ -13,6 +13,7 @@ interface GiveDrinksModalProps {
   roundNumber: number;
   onConfirm: (assignments: DrinkAssignment[]) => void;
   onSkip: () => void;
+  allowSkip?: boolean;
 }
 
 export default function GiveDrinksModal({
@@ -23,6 +24,7 @@ export default function GiveDrinksModal({
   roundNumber,
   onConfirm,
   onSkip,
+  allowSkip = true,
 }: GiveDrinksModalProps) {
   const { fs, sw, sh, s } = useResponsive();
 
@@ -144,12 +146,14 @@ export default function GiveDrinksModal({
 
           {/* Buttons */}
           <View style={[styles.buttonRow, { gap: s(12), marginTop: sh(20) }]}>
-            <Pressable
-              style={[styles.skipButton, { paddingHorizontal: sw(24), paddingVertical: sh(14) }]}
-              onPress={onSkip}
-            >
-              <Text style={[styles.skipButtonText, { fontSize: fs(16) }]}>SKIP</Text>
-            </Pressable>
+            {allowSkip && (
+              <Pressable
+                style={[styles.skipButton, { paddingHorizontal: sw(24), paddingVertical: sh(14) }]}
+                onPress={onSkip}
+              >
+                <Text style={[styles.skipButtonText, { fontSize: fs(16) }]}>SKIP</Text>
+              </Pressable>
+            )}
             <Pressable
               style={[
                 styles.confirmButton,
