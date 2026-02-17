@@ -92,11 +92,12 @@ export default function Pyramid() {
   // Edge case: Show drink modal when all revealed but no result modal is showing
   // This handles the case where a player has drinks to assign but the result modal
   // was never shown to them (e.g., they're not the host and already dismissed their modal)
+  // Only applies to multiplayer - local mode doesn't use drink assignment modal
   useEffect(() => {
-    if (allRevealed && isMyTurnToAssign && !showModal && !showDrinkAssignment) {
+    if (isMultiplayer && allRevealed && isMyTurnToAssign && !showModal && !showDrinkAssignment) {
       setShowDrinkAssignment(true);
     }
-  }, [allRevealed, isMyTurnToAssign, showModal, showDrinkAssignment]);
+  }, [isMultiplayer, allRevealed, isMyTurnToAssign, showModal, showDrinkAssignment]);
 
   // Navigate to results when all cards revealed and all assignments done
   useEffect(() => {
@@ -145,9 +146,9 @@ export default function Pyramid() {
     setShowModal(false);
     setLastRevealedRow(null);
 
-    // After closing result modal, check if I need to assign drinks
+    // After closing result modal, check if I need to assign drinks (multiplayer only)
     // Small delay to ensure modal is fully dismissed before showing next one
-    if (isMyTurnToAssign && !showDrinkAssignment) {
+    if (isMultiplayer && isMyTurnToAssign && !showDrinkAssignment) {
       setTimeout(() => {
         setShowDrinkAssignment(true);
       }, 100);
@@ -244,8 +245,8 @@ export default function Pyramid() {
           {/* Footer: Drink assignment or See Results */}
           {allRevealed && (
             <View style={styles.footer}>
-              {inDrinkAssignmentPhase ? (
-                // Show waiting message if I'm not assigning (multiplayer only)
+              {inDrinkAssignmentPhase && isMultiplayer ? (
+                // Multiplayer: Show waiting message if I'm not assigning
                 !isMyTurnToAssign && remainingAssignerNames.length > 0 && (
                   <View style={styles.waitingContainer}>
                     <Text style={[styles.waitingText, { fontSize: fs(16) }]}>
@@ -254,7 +255,7 @@ export default function Pyramid() {
                   </View>
                 )
               ) : (
-                // No drinks to assign - show results button (shouldn't normally be visible due to auto-navigation)
+                // Local mode OR all assignments complete: show results button
                 <ActionButton
                   title="See Results"
                   variant="primary"
@@ -272,7 +273,7 @@ export default function Pyramid() {
         onClose={handleCloseModal}
       />
 
-      {currentAssigningPlayer && (
+      {currentAssigningPlayer && isMultiplayer && (
         <GiveDrinksModal
           visible={showDrinkAssignment && isMyTurnToAssign}
           totalDrinks={myDrinksToGive}
