@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { View, TextInput, Pressable, Text, StyleSheet } from "react-native";
-import { Colors } from "../../constants/Colors";
+import { useTheme } from "../context/ThemeContext";
 import { lightHaptic } from "../utils/haptics";
 
 interface PlayerInputProps {
@@ -9,6 +9,7 @@ interface PlayerInputProps {
 
 export default function PlayerInput({ onAdd }: PlayerInputProps) {
   const [name, setName] = useState("");
+  const { colors } = useTheme();
 
   const handleAdd = () => {
     const trimmed = name.trim();
@@ -21,18 +22,29 @@ export default function PlayerInput({ onAdd }: PlayerInputProps) {
   return (
     <View style={styles.container}>
       <TextInput
-        style={styles.input}
+        style={[
+          styles.input,
+          {
+            backgroundColor: colors.surface,
+            color: colors.textPrimary,
+            borderColor: colors.divider,
+          },
+        ]}
         value={name}
         onChangeText={setName}
         placeholder="Enter name"
-        placeholderTextColor={Colors.gray}
+        placeholderTextColor={colors.textMuted}
         onSubmitEditing={handleAdd}
         returnKeyType="done"
         autoCapitalize="words"
         maxLength={20}
       />
       <Pressable
-        style={[styles.addButton, !name.trim() && styles.addButtonDisabled]}
+        style={[
+          styles.addButton,
+          { backgroundColor: colors.fire },
+          !name.trim() && styles.addButtonDisabled,
+        ]}
         onPress={handleAdd}
         disabled={!name.trim()}
       >
@@ -50,20 +62,16 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    backgroundColor: Colors.surface,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
-    color: Colors.textPrimary,
     borderWidth: 1,
-    borderColor: Colors.surfaceLight,
   },
   addButton: {
     width: 50,
     height: 50,
     borderRadius: 12,
-    backgroundColor: Colors.red,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -71,7 +79,7 @@ const styles = StyleSheet.create({
     opacity: 0.4,
   },
   addButtonText: {
-    color: Colors.white,
+    color: "#FFFFFF",
     fontSize: 24,
     fontWeight: "700",
   },

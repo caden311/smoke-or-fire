@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { View, Text, Modal, Pressable, StyleSheet, ScrollView } from "react-native";
 import { Player, DrinkAssignment } from "../types";
-import { Colors } from "../../constants/Colors";
+import { useTheme } from "../context/ThemeContext";
 import { useResponsive } from "../hooks/useResponsive";
 import { mediumHaptic } from "../utils/haptics";
 
@@ -27,6 +27,7 @@ export default function GiveDrinksModal({
   allowSkip = true,
 }: GiveDrinksModalProps) {
   const { fs, sw, sh, s } = useResponsive();
+  const { colors } = useTheme();
 
   // Track drinks assigned to each player by their ID
   const [assignments, setAssignments] = useState<Record<string, number>>({});
@@ -89,17 +90,17 @@ export default function GiveDrinksModal({
       transparent
       onRequestClose={onSkip}
     >
-      <View style={styles.backdrop}>
-        <View style={[styles.content, { paddingHorizontal: sw(24), paddingTop: sh(28), paddingBottom: sh(40) }]}>
+      <View style={[styles.backdrop, { backgroundColor: colors.overlay }]}>
+        <View style={[styles.content, { paddingHorizontal: sw(24), paddingTop: sh(28), paddingBottom: sh(40), backgroundColor: colors.surface }]}>
           {/* Header */}
-          <Text style={[styles.title, { fontSize: fs(24) }]}>Give Drinks</Text>
-          <Text style={[styles.subtitle, { fontSize: fs(16), marginTop: sh(8) }]}>
+          <Text style={[styles.title, { fontSize: fs(24), color: colors.textPrimary }]}>Give Drinks</Text>
+          <Text style={[styles.subtitle, { fontSize: fs(16), marginTop: sh(8), color: colors.textSecondary }]}>
             You won! Assign {totalDrinks} {totalDrinks === 1 ? "drink" : "drinks"}
           </Text>
 
           {/* Remaining counter */}
           <View style={[styles.remainingBadge, {
-            backgroundColor: remaining === 0 ? Colors.green : Colors.surfaceLight,
+            backgroundColor: remaining === 0 ? colors.success : colors.surfaceLight,
             paddingHorizontal: sw(16),
             paddingVertical: sh(8),
             marginTop: sh(16),
@@ -114,29 +115,31 @@ export default function GiveDrinksModal({
             {otherPlayers.map((player) => {
               const count = assignments[player.id] || 0;
               return (
-                <View key={player.id} style={[styles.playerRow, { paddingHorizontal: sw(16), paddingVertical: sh(14) }]}>
-                  <Text style={[styles.playerName, { fontSize: fs(17) }]}>{player.name}</Text>
+                <View key={player.id} style={[styles.playerRow, { paddingHorizontal: sw(16), paddingVertical: sh(14), backgroundColor: colors.surfaceLight }]}>
+                  <Text style={[styles.playerName, { fontSize: fs(17), color: colors.textPrimary }]}>{player.name}</Text>
                   <View style={styles.stepperContainer}>
                     <Pressable
                       style={[
                         styles.stepperButton,
+                        { backgroundColor: colors.surface },
                         count === 0 && styles.stepperButtonDisabled,
                       ]}
                       onPress={() => handleDecrement(player.id)}
                       disabled={count === 0}
                     >
-                      <Text style={[styles.stepperButtonText, { fontSize: fs(20) }]}>-</Text>
+                      <Text style={[styles.stepperButtonText, { fontSize: fs(20), color: colors.textPrimary }]}>-</Text>
                     </Pressable>
-                    <Text style={[styles.countText, { fontSize: fs(18), minWidth: sw(32) }]}>{count}</Text>
+                    <Text style={[styles.countText, { fontSize: fs(18), minWidth: sw(32), color: colors.textPrimary }]}>{count}</Text>
                     <Pressable
                       style={[
                         styles.stepperButton,
+                        { backgroundColor: colors.surface },
                         remaining === 0 && styles.stepperButtonDisabled,
                       ]}
                       onPress={() => handleIncrement(player.id)}
                       disabled={remaining === 0}
                     >
-                      <Text style={[styles.stepperButtonText, { fontSize: fs(20) }]}>+</Text>
+                      <Text style={[styles.stepperButtonText, { fontSize: fs(20), color: colors.textPrimary }]}>+</Text>
                     </Pressable>
                   </View>
                 </View>
@@ -148,15 +151,16 @@ export default function GiveDrinksModal({
           <View style={[styles.buttonRow, { gap: s(12), marginTop: sh(20) }]}>
             {allowSkip && (
               <Pressable
-                style={[styles.skipButton, { paddingHorizontal: sw(24), paddingVertical: sh(14) }]}
+                style={[styles.skipButton, { paddingHorizontal: sw(24), paddingVertical: sh(14), backgroundColor: colors.surfaceLight }]}
                 onPress={onSkip}
               >
-                <Text style={[styles.skipButtonText, { fontSize: fs(16) }]}>SKIP</Text>
+                <Text style={[styles.skipButtonText, { fontSize: fs(16), color: colors.textSecondary }]}>SKIP</Text>
               </Pressable>
             )}
             <Pressable
               style={[
                 styles.confirmButton,
+                { backgroundColor: colors.success },
                 !canConfirm && styles.confirmButtonDisabled,
                 { paddingHorizontal: sw(32), paddingVertical: sh(14) }
               ]}
@@ -175,11 +179,9 @@ export default function GiveDrinksModal({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.7)",
     justifyContent: "flex-end",
   },
   content: {
-    backgroundColor: Colors.surface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     alignItems: "center",
@@ -187,17 +189,15 @@ const styles = StyleSheet.create({
   },
   title: {
     fontWeight: "900",
-    color: Colors.textPrimary,
   },
   subtitle: {
-    color: Colors.textSecondary,
     textAlign: "center",
   },
   remainingBadge: {
     borderRadius: 12,
   },
   remainingText: {
-    color: Colors.white,
+    color: "#FFFFFF",
     fontWeight: "700",
   },
   playerList: {
@@ -209,13 +209,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: Colors.surfaceLight,
     borderRadius: 10,
     marginBottom: 8,
   },
   playerName: {
     fontWeight: "700",
-    color: Colors.textPrimary,
     flex: 1,
   },
   stepperContainer: {
@@ -227,7 +225,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: Colors.surface,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -235,11 +232,9 @@ const styles = StyleSheet.create({
     opacity: 0.3,
   },
   stepperButtonText: {
-    color: Colors.white,
     fontWeight: "800",
   },
   countText: {
-    color: Colors.white,
     fontWeight: "800",
     textAlign: "center",
   },
@@ -248,23 +243,20 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   skipButton: {
-    backgroundColor: Colors.surfaceLight,
     borderRadius: 12,
   },
   skipButtonText: {
-    color: Colors.textSecondary,
     fontWeight: "800",
     letterSpacing: 2,
   },
   confirmButton: {
-    backgroundColor: Colors.green,
     borderRadius: 12,
   },
   confirmButtonDisabled: {
     opacity: 0.4,
   },
   confirmButtonText: {
-    color: Colors.white,
+    color: "#FFFFFF",
     fontWeight: "800",
     letterSpacing: 2,
   },

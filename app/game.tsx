@@ -7,11 +7,11 @@ import Animated, { FadeIn } from "react-native-reanimated";
 import { useMultiplayer } from "../src/context/MultiplayerContext";
 import { useGameState } from "../src/hooks/useGameState";
 import { useGameActions } from "../src/hooks/useGameActions";
+import { useTheme } from "../src/context/ThemeContext";
 import FlippableCard from "../src/components/FlippableCard";
 import CardFace from "../src/components/CardFace";
 import ActionButton from "../src/components/ActionButton";
 import ResultBanner from "../src/components/ResultBanner";
-import { Colors } from "../constants/Colors";
 import { Guess, GameState, DrinkAssignment } from "../src/types";
 import { getCardNumericValue } from "../src/utils/deck";
 import { successHaptic, errorHaptic, mediumHaptic } from "../src/utils/haptics";
@@ -34,6 +34,7 @@ export default function GameRound() {
   const { isMultiplayer, isHost, playerId } = useMultiplayer();
   const { state, isLoading, isMyTurn, currentPlayer } = useGameState();
   const { dispatch } = useGameActions();
+  const { colors } = useTheme();
 
   const [guessState, setGuessState] = useState<'idle' | 'submitting' | 'guessed'>('idle');
   const [showDrawnCards, setShowDrawnCards] = useState(false);
@@ -103,11 +104,11 @@ export default function GameRound() {
   // Show loading state while waiting for valid game data
   if (isLoading || !isGameStateReady(state)) {
     return (
-      <LinearGradient colors={[Colors.background, "#0A0A1A"]} style={styles.gradient}>
+      <LinearGradient colors={[colors.background, colors.backgroundGradientEnd]} style={styles.gradient}>
         <SafeAreaView style={styles.container}>
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={Colors.textSecondary} />
-            <Text style={styles.loadingText}>Loading game...</Text>
+            <ActivityIndicator size="large" color={colors.textSecondary} />
+            <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading game...</Text>
           </View>
         </SafeAreaView>
       </LinearGradient>
@@ -196,21 +197,21 @@ export default function GameRound() {
 
   return (
     <LinearGradient
-      colors={[Colors.background, "#0A0A1A"]}
+      colors={[colors.background, colors.backgroundGradientEnd]}
       style={styles.gradient}
     >
       <SafeAreaView style={styles.container}>
         <View style={[styles.content, { paddingHorizontal: contentPadding }]}>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={[styles.roundText, { fontSize: fs(16) }]}>Round {state.roundNumber}</Text>
-            <Text style={[styles.progressText, { fontSize: fs(14) }]}>
+            <Text style={[styles.roundText, { fontSize: fs(16), color: colors.textSecondary }]}>Round {state.roundNumber}</Text>
+            <Text style={[styles.progressText, { fontSize: fs(14), color: colors.textMuted }]}>
               Player {state.currentPlayerIndex + 1} of {state.players.length}
             </Text>
             {state.playerCards.some((cards) => cards.length > 0) && (
               <Pressable
                 onPress={() => setShowDrawnCards(true)}
-                style={styles.viewCardsIcon}
+                style={[styles.viewCardsIcon, { backgroundColor: colors.surface }]}
                 hitSlop={8}
               >
                 <Text style={styles.viewCardsIconText}>&#127183;</Text>
@@ -224,8 +225,8 @@ export default function GameRound() {
             entering={FadeIn.duration(300)}
             style={[styles.playerSection, { marginBottom: 20 }]}
           >
-            <Text style={[styles.playerName, { fontSize: fs(36) }]}>{currentPlayer?.name}</Text>
-            <Text style={[styles.promptText, { fontSize: fs(18) }]}>
+            <Text style={[styles.playerName, { fontSize: fs(36), color: colors.textPrimary }]}>{currentPlayer?.name}</Text>
+            <Text style={[styles.promptText, { fontSize: fs(18), color: colors.textSecondary }]}>
               {showResult
                 ? ""
                 : isGuessTheSuit
@@ -241,7 +242,7 @@ export default function GameRound() {
           {/* Previous Card (Higher or Lower round) */}
           {isHigherOrLower && previousCard && guessState === 'idle' && (
             <View style={[styles.previousCardSection, { marginBottom: 20 }]}>
-              <Text style={[styles.previousCardLabel, { fontSize: fs(14), marginBottom: 20 }]}>Your last card:</Text>
+              <Text style={[styles.previousCardLabel, { fontSize: fs(14), marginBottom: 20, color: colors.textSecondary }]}>Your last card:</Text>
               <View style={{
                 width: previousCardWidth,
                 height: previousCardHeight,
@@ -258,7 +259,7 @@ export default function GameRound() {
           {/* Previous Cards (Inside or Outside round) */}
           {isInsideOrOutside && sortedPreviousCards.length === 2 && guessState === 'idle' && (
             <View style={[styles.previousCardSection, { marginBottom: 20 }]}>
-              <Text style={[styles.previousCardLabel, { fontSize: fs(14), marginBottom: 20 }]}>Your cards:</Text>
+              <Text style={[styles.previousCardLabel, { fontSize: fs(14), marginBottom: 20, color: colors.textSecondary }]}>Your cards:</Text>
               <View style={styles.previousCardsRow}>
                 <View style={{
                   width: previousCardWidth,
@@ -270,7 +271,7 @@ export default function GameRound() {
                     <CardFace card={sortedPreviousCards[0]} />
                   </View>
                 </View>
-                <Text style={[styles.cardDash, { fontSize: fs(16), marginHorizontal: 20 }]}>to</Text>
+                <Text style={[styles.cardDash, { fontSize: fs(16), marginHorizontal: 20, color: colors.textSecondary }]}>to</Text>
                 <View style={{
                   width: previousCardWidth,
                   height: previousCardHeight,
@@ -293,8 +294,8 @@ export default function GameRound() {
           {/* Waiting for other player */}
           {showWaitingForOther && (
             <View style={styles.waitingOverlay}>
-              <ActivityIndicator size="large" color={Colors.textSecondary} />
-              <Text style={[styles.waitingText, { fontSize: fs(18), marginTop: sh(16) }]}>
+              <ActivityIndicator size="large" color={colors.textSecondary} />
+              <Text style={[styles.waitingText, { fontSize: fs(18), marginTop: sh(16), color: colors.textSecondary }]}>
                 Waiting for {currentPlayer?.name}...
               </Text>
             </View>
@@ -303,8 +304,8 @@ export default function GameRound() {
           {/* Submitting guess */}
           {showSubmitting && (
             <View style={styles.waitingOverlay}>
-              <ActivityIndicator size="large" color={Colors.textSecondary} />
-              <Text style={[styles.waitingText, { fontSize: fs(18), marginTop: sh(16) }]}>
+              <ActivityIndicator size="large" color={colors.textSecondary} />
+              <Text style={[styles.waitingText, { fontSize: fs(18), marginTop: sh(16), color: colors.textSecondary }]}>
                 Submitting guess...
               </Text>
             </View>
@@ -479,19 +480,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 20,
-    backgroundColor: Colors.surface,
   },
   viewCardsIconText: {
     fontSize: 22,
   },
   roundText: {
     fontWeight: "700",
-    color: Colors.textSecondary,
     textTransform: "uppercase",
     letterSpacing: 3,
   },
   progressText: {
-    color: Colors.gray,
     marginTop: 4,
   },
   playerSection: {
@@ -499,11 +497,9 @@ const styles = StyleSheet.create({
   },
   playerName: {
     fontWeight: "900",
-    color: Colors.textPrimary,
     textAlign: "center",
   },
   promptText: {
-    color: Colors.textSecondary,
     marginTop: 4,
     minHeight: 24,
   },
@@ -512,7 +508,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   previousCardLabel: {
-    color: Colors.textSecondary,
     marginBottom: 8,
     textTransform: "uppercase",
     letterSpacing: 2,
@@ -524,7 +519,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   cardDash: {
-    color: Colors.textSecondary,
     fontWeight: "700",
     textTransform: "uppercase",
     letterSpacing: 2,
@@ -557,7 +551,6 @@ const styles = StyleSheet.create({
     paddingVertical: 40,
   },
   waitingText: {
-    color: Colors.textSecondary,
     textAlign: "center",
   },
   loadingContainer: {
@@ -566,7 +559,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   loadingText: {
-    color: Colors.textSecondary,
     marginTop: 16,
     fontSize: 18,
   },

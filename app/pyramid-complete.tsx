@@ -8,8 +8,8 @@ import { useMultiplayer } from "../src/context/MultiplayerContext";
 import { useGameState } from "../src/hooks/useGameState";
 import { useGameActions } from "../src/hooks/useGameActions";
 import { useAds } from "../src/context/AdContext";
+import { useTheme } from "../src/context/ThemeContext";
 import ActionButton from "../src/components/ActionButton";
-import { Colors } from "../constants/Colors";
 import { useResponsive } from "../src/hooks/useResponsive";
 
 export default function PyramidComplete() {
@@ -17,16 +17,17 @@ export default function PyramidComplete() {
   const { state, isLoading } = useGameState();
   const { dispatch } = useGameActions();
   const { showInterstitialAd } = useAds();
+  const { colors } = useTheme();
   const { fs, sw, sh } = useResponsive();
 
   // Show loading state
   if (isLoading || !state) {
     return (
-      <LinearGradient colors={[Colors.background, "#12061F"]} style={styles.gradient}>
+      <LinearGradient colors={[colors.background, colors.backgroundGradientEnd]} style={styles.gradient}>
         <SafeAreaView style={styles.container}>
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={Colors.textSecondary} />
-            <Text style={styles.loadingText}>Loading results...</Text>
+            <ActivityIndicator size="large" color={colors.textSecondary} />
+            <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading results...</Text>
           </View>
         </SafeAreaView>
       </LinearGradient>
@@ -78,14 +79,14 @@ export default function PyramidComplete() {
 
   return (
     <LinearGradient
-      colors={[Colors.background, "#12061F"]}
+      colors={[colors.background, colors.backgroundGradientEnd]}
       style={styles.gradient}
     >
       <SafeAreaView style={styles.container}>
         <View style={[styles.content, { paddingHorizontal: sw(24) }]}>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={[styles.title, { fontSize: fs(28) }]}>PYRAMID COMPLETE</Text>
+            <Text style={[styles.title, { fontSize: fs(28), color: colors.textPrimary }]}>PYRAMID COMPLETE</Text>
           </View>
 
           {/* Player results */}
@@ -99,23 +100,23 @@ export default function PyramidComplete() {
                 <Animated.View
                   key={entry.player.id}
                   entering={FadeInDown.delay(index * 100).duration(300)}
-                  style={[styles.resultRow, { paddingHorizontal: sw(16), paddingVertical: sh(14) }]}
+                  style={[styles.resultRow, { paddingHorizontal: sw(16), paddingVertical: sh(14), backgroundColor: colors.surface }]}
                 >
                   <View style={styles.playerInfo}>
-                    <Text style={[styles.playerName, { fontSize: fs(18) }]}>{entry.player.name}</Text>
+                    <Text style={[styles.playerName, { fontSize: fs(18), color: colors.textPrimary }]}>{entry.player.name}</Text>
                     {received && received.totalReceived > 0 && (
-                      <Text style={[styles.receivedText, { fontSize: fs(12) }]}>
+                      <Text style={[styles.receivedText, { fontSize: fs(12), color: colors.textSecondary }]}>
                         Received {received.totalReceived} from {received.fromPlayers.map(f => f.fromName).join(", ")}
                       </Text>
                     )}
                   </View>
                   <View style={styles.badges}>
-                    <View style={[styles.badge, { backgroundColor: Colors.green, paddingHorizontal: sw(10), paddingVertical: sh(4) }]}>
+                    <View style={[styles.badge, { backgroundColor: colors.success, paddingHorizontal: sw(10), paddingVertical: sh(4) }]}>
                       <Text style={[styles.badgeText, { fontSize: fs(12) }]}>
                         Gave {entry.gave}
                       </Text>
                     </View>
-                    <View style={[styles.badge, { backgroundColor: Colors.red, paddingHorizontal: sw(10), paddingVertical: sh(4) }]}>
+                    <View style={[styles.badge, { backgroundColor: colors.fire, paddingHorizontal: sw(10), paddingVertical: sh(4) }]}>
                       <Text style={[styles.badgeText, { fontSize: fs(12) }]}>
                         Took {entry.took}
                       </Text>
@@ -127,20 +128,20 @@ export default function PyramidComplete() {
 
             {/* Drinks Given Section */}
             {pyramidAssignments.length > 0 && (
-              <View style={[styles.drinksSection, { marginTop: sh(20), paddingTop: sh(16) }]}>
-                <Text style={[styles.drinksSectionTitle, { fontSize: fs(14), marginBottom: sh(12) }]}>
+              <View style={[styles.drinksSection, { marginTop: sh(20), paddingTop: sh(16), borderTopColor: colors.divider }]}>
+                <Text style={[styles.drinksSectionTitle, { fontSize: fs(14), marginBottom: sh(12), color: colors.textSecondary }]}>
                   Drinks Given
                 </Text>
                 {pyramidAssignments.map((assignment, index) => (
                   <Animated.View
                     key={assignment.id}
                     entering={FadeInDown.delay(playerTotals.length * 100 + index * 80).duration(250)}
-                    style={[styles.drinkRow, { paddingHorizontal: sw(16), paddingVertical: sh(10) }]}
+                    style={[styles.drinkRow, { paddingHorizontal: sw(16), paddingVertical: sh(10), backgroundColor: colors.surface }]}
                   >
-                    <Text style={[styles.drinkText, { fontSize: fs(16) }]}>
+                    <Text style={[styles.drinkText, { fontSize: fs(16), color: colors.textPrimary }]}>
                       {assignment.fromPlayerName} → {assignment.toPlayerName}
                     </Text>
-                    <Text style={[styles.drinkAmount, { fontSize: fs(14) }]}>
+                    <Text style={[styles.drinkAmount, { fontSize: fs(14), color: colors.accent }]}>
                       {assignment.amount} {assignment.amount === 1 ? "drink" : "drinks"}
                     </Text>
                   </Animated.View>
@@ -180,7 +181,6 @@ const styles = StyleSheet.create({
   },
   title: {
     fontWeight: "900",
-    color: Colors.textPrimary,
     letterSpacing: 3,
   },
   resultsList: {
@@ -190,7 +190,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: Colors.surface,
     borderRadius: 12,
     marginBottom: 8,
   },
@@ -199,10 +198,8 @@ const styles = StyleSheet.create({
   },
   playerName: {
     fontWeight: "700",
-    color: Colors.textPrimary,
   },
   receivedText: {
-    color: Colors.textSecondary,
     marginTop: 2,
   },
   badges: {
@@ -213,7 +210,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   badgeText: {
-    color: Colors.white,
+    color: "#FFFFFF",
     fontWeight: "800",
     letterSpacing: 1,
   },
@@ -227,16 +224,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   loadingText: {
-    color: Colors.textSecondary,
     marginTop: 16,
     fontSize: 18,
   },
   drinksSection: {
     borderTopWidth: 1,
-    borderTopColor: Colors.gray,
   },
   drinksSectionTitle: {
-    color: Colors.textSecondary,
     fontWeight: "700",
     textTransform: "uppercase",
     letterSpacing: 2,
@@ -246,16 +240,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: Colors.surface,
     borderRadius: 10,
     marginBottom: 6,
   },
   drinkText: {
-    color: Colors.textPrimary,
     fontWeight: "600",
   },
   drinkAmount: {
-    color: Colors.gold,
     fontWeight: "700",
   },
 });

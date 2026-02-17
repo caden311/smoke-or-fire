@@ -6,14 +6,15 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useMultiplayer } from "../src/context/MultiplayerContext";
 import { useRemoteGame } from "../src/context/RemoteGameContext";
 import { useSettings } from "../src/context/SettingsContext";
+import { useTheme } from "../src/context/ThemeContext";
 import ActionButton from "../src/components/ActionButton";
-import { Colors } from "../constants/Colors";
 import { useResponsive } from "../src/hooks/useResponsive";
 import { createDeck, shuffleDeck } from "../src/utils/deck";
 import { lightHaptic } from "../src/utils/haptics";
 
 export default function HostLobby() {
   const { fs, sh, sw } = useResponsive();
+  const { colors } = useTheme();
   const {
     roomCode,
     players,
@@ -110,20 +111,20 @@ export default function HostLobby() {
 
   return (
     <LinearGradient
-      colors={[Colors.background, "#1A0A0A"]}
+      colors={[colors.background, colors.backgroundGradientEnd]}
       style={styles.gradient}
     >
       <SafeAreaView style={styles.container}>
         <View style={[styles.content, { paddingHorizontal: sw(24) }]}>
           {/* Header */}
           <View style={[styles.header, { marginBottom: sh(32) }]}>
-            <Text style={[styles.title, { fontSize: fs(28) }]}>
+            <Text style={[styles.title, { fontSize: fs(28), color: colors.textPrimary }]}>
               {isHost ? "Game Lobby" : "Waiting for Host"}
             </Text>
             {connectionStatus === "connecting" && (
               <View style={styles.connectingRow}>
-                <ActivityIndicator size="small" color={Colors.textSecondary} />
-                <Text style={[styles.connectingText, { fontSize: fs(14) }]}>
+                <ActivityIndicator size="small" color={colors.textSecondary} />
+                <Text style={[styles.connectingText, { fontSize: fs(14), color: colors.textSecondary }]}>
                   Connecting...
                 </Text>
               </View>
@@ -132,14 +133,14 @@ export default function HostLobby() {
 
           {/* Room Code Display */}
           {roomCode && (
-            <View style={[styles.codeSection, { marginBottom: sh(32) }]}>
-              <Text style={[styles.codeLabel, { fontSize: fs(14) }]}>
+            <View style={[styles.codeSection, { marginBottom: sh(32), backgroundColor: colors.surface }]}>
+              <Text style={[styles.codeLabel, { fontSize: fs(14), color: colors.textSecondary }]}>
                 Room Code
               </Text>
-              <Text style={[styles.roomCode, { fontSize: fs(48) }]}>
+              <Text style={[styles.roomCode, { fontSize: fs(48), color: colors.textPrimary }]}>
                 {roomCode}
               </Text>
-              <Text style={[styles.codeHint, { fontSize: fs(12) }]}>
+              <Text style={[styles.codeHint, { fontSize: fs(12), color: colors.textMuted }]}>
                 Share this code with friends
               </Text>
               <ActionButton
@@ -153,20 +154,20 @@ export default function HostLobby() {
 
           {/* Players List */}
           <View style={styles.playersSection}>
-            <Text style={[styles.playersLabel, { fontSize: fs(16), marginBottom: sh(16) }]}>
+            <Text style={[styles.playersLabel, { fontSize: fs(16), marginBottom: sh(16), color: colors.textSecondary }]}>
               Players ({players.length})
             </Text>
             <FlatList
               data={players}
               keyExtractor={(item) => item.id}
-              renderItem={({ item, index }) => (
-                <View style={[styles.playerRow, { paddingVertical: sh(12) }]}>
+              renderItem={({ item }) => (
+                <View style={[styles.playerRow, { paddingVertical: sh(12), backgroundColor: colors.surface }]}>
                   <View style={styles.playerInfo}>
-                    <Text style={[styles.playerName, { fontSize: fs(18) }]}>
+                    <Text style={[styles.playerName, { fontSize: fs(18), color: colors.textPrimary }]}>
                       {item.name}
                     </Text>
                     {room?.hostId === item.id && (
-                      <View style={styles.hostBadge}>
+                      <View style={[styles.hostBadge, { backgroundColor: colors.fire }]}>
                         <Text style={[styles.hostBadgeText, { fontSize: fs(10) }]}>
                           HOST
                         </Text>
@@ -176,7 +177,8 @@ export default function HostLobby() {
                   <View
                     style={[
                       styles.readyIndicator,
-                      item.ready && styles.readyIndicatorActive,
+                      { backgroundColor: colors.textMuted },
+                      item.ready && { backgroundColor: colors.success },
                     ]}
                   />
                 </View>
@@ -195,7 +197,7 @@ export default function HostLobby() {
                 disabled={!canStart}
               />
             ) : (
-              <Text style={[styles.waitingText, { fontSize: fs(16) }]}>
+              <Text style={[styles.waitingText, { fontSize: fs(16), color: colors.textSecondary }]}>
                 Waiting for host to start...
               </Text>
             )}
@@ -228,7 +230,6 @@ const styles = StyleSheet.create({
   },
   title: {
     fontWeight: "900",
-    color: Colors.textPrimary,
     letterSpacing: 2,
   },
   connectingRow: {
@@ -237,36 +238,28 @@ const styles = StyleSheet.create({
     marginTop: 8,
     gap: 8,
   },
-  connectingText: {
-    color: Colors.textSecondary,
-  },
+  connectingText: {},
   codeSection: {
     alignItems: "center",
-    backgroundColor: Colors.surface,
     borderRadius: 16,
     paddingVertical: 24,
     paddingHorizontal: 32,
   },
   codeLabel: {
-    color: Colors.textSecondary,
     textTransform: "uppercase",
     letterSpacing: 2,
     fontWeight: "600",
   },
   roomCode: {
     fontWeight: "900",
-    color: Colors.white,
     letterSpacing: 12,
     marginVertical: 8,
   },
-  codeHint: {
-    color: Colors.gray,
-  },
+  codeHint: {},
   playersSection: {
     flex: 1,
   },
   playersLabel: {
-    color: Colors.textSecondary,
     textTransform: "uppercase",
     letterSpacing: 2,
     fontWeight: "700",
@@ -278,7 +271,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: Colors.surface,
     borderRadius: 12,
     paddingHorizontal: 16,
     marginBottom: 8,
@@ -289,33 +281,26 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   playerName: {
-    color: Colors.textPrimary,
     fontWeight: "600",
   },
   hostBadge: {
-    backgroundColor: Colors.red,
     borderRadius: 4,
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
   hostBadgeText: {
-    color: Colors.white,
+    color: "#FFFFFF",
     fontWeight: "700",
   },
   readyIndicator: {
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: Colors.gray,
-  },
-  readyIndicatorActive: {
-    backgroundColor: Colors.green,
   },
   footer: {
     alignItems: "center",
   },
   waitingText: {
-    color: Colors.textSecondary,
     fontStyle: "italic",
   },
 });

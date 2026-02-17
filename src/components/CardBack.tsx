@@ -1,6 +1,6 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
-import { Colors } from "../../constants/Colors";
+import { useTheme } from "../context/ThemeContext";
 
 interface CardBackProps {
   width?: number;
@@ -8,6 +8,7 @@ interface CardBackProps {
 }
 
 export default function CardBack({ width = 136, height = 220 }: CardBackProps) {
+  const { colors } = useTheme();
   const ratio = width / 136;
 
   return (
@@ -19,6 +20,8 @@ export default function CardBack({ width = 136, height = 220 }: CardBackProps) {
           height,
           borderRadius: Math.round(16 * ratio),
           padding: Math.round(8 * ratio),
+          backgroundColor: colors.cardBack,
+          borderColor: colors.cardBackAccent,
         },
       ]}
     >
@@ -28,6 +31,7 @@ export default function CardBack({ width = 136, height = 220 }: CardBackProps) {
           {
             borderRadius: Math.round(10 * ratio),
             padding: Math.round(8 * ratio),
+            borderColor: colors.cardBackAccent,
           },
         ]}
       >
@@ -38,6 +42,7 @@ export default function CardBack({ width = 136, height = 220 }: CardBackProps) {
               {
                 width: Math.round(20 * ratio),
                 height: Math.round(20 * ratio),
+                backgroundColor: colors.cardBackAccent,
               },
             ]}
           />
@@ -48,6 +53,7 @@ export default function CardBack({ width = 136, height = 220 }: CardBackProps) {
                 {
                   width: Math.round(14 * ratio),
                   height: Math.round(14 * ratio),
+                  backgroundColor: colors.cardBackAccent,
                 },
               ]}
             />
@@ -57,6 +63,7 @@ export default function CardBack({ width = 136, height = 220 }: CardBackProps) {
                 {
                   width: Math.round(14 * ratio),
                   height: Math.round(14 * ratio),
+                  backgroundColor: colors.cardBackAccent,
                 },
               ]}
             />
@@ -67,6 +74,7 @@ export default function CardBack({ width = 136, height = 220 }: CardBackProps) {
               {
                 width: Math.round(20 * ratio),
                 height: Math.round(20 * ratio),
+                backgroundColor: colors.cardBackAccent,
               },
             ]}
           />
@@ -77,6 +85,7 @@ export default function CardBack({ width = 136, height = 220 }: CardBackProps) {
                 {
                   width: Math.round(14 * ratio),
                   height: Math.round(14 * ratio),
+                  backgroundColor: colors.cardBackAccent,
                 },
               ]}
             />
@@ -86,6 +95,7 @@ export default function CardBack({ width = 136, height = 220 }: CardBackProps) {
                 {
                   width: Math.round(14 * ratio),
                   height: Math.round(14 * ratio),
+                  backgroundColor: colors.cardBackAccent,
                 },
               ]}
             />
@@ -96,6 +106,7 @@ export default function CardBack({ width = 136, height = 220 }: CardBackProps) {
               {
                 width: Math.round(20 * ratio),
                 height: Math.round(20 * ratio),
+                backgroundColor: colors.cardBackAccent,
               },
             ]}
           />
@@ -107,9 +118,7 @@ export default function CardBack({ width = 136, height = 220 }: CardBackProps) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: Colors.cardBack,
     borderWidth: 2,
-    borderColor: Colors.cardBackAccent,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -119,7 +128,6 @@ const styles = StyleSheet.create({
   innerBorder: {
     flex: 1,
     borderWidth: 2,
-    borderColor: Colors.cardBackAccent,
   },
   pattern: {
     flex: 1,
@@ -127,14 +135,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   diamond: {
-    backgroundColor: Colors.cardBackAccent,
     transform: [{ rotate: "45deg" }],
   },
   diamondRow: {
     flexDirection: "row",
   },
   diamondSmall: {
-    backgroundColor: Colors.cardBackAccent,
     transform: [{ rotate: "45deg" }],
   },
 });

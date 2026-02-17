@@ -6,19 +6,19 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useGame } from "../src/context/GameContext";
 import { useMultiplayer } from "../src/context/MultiplayerContext";
 import { useSettings } from "../src/context/SettingsContext";
+import { useTheme } from "../src/context/ThemeContext";
 import PlayerInput from "../src/components/PlayerInput";
 import PlayerList from "../src/components/PlayerList";
 import ActionButton from "../src/components/ActionButton";
-import { Colors } from "../constants/Colors";
 import { useResponsive } from "../src/hooks/useResponsive";
 
 export default function PlayerRegistration() {
   const { state, dispatch } = useGame();
   const { isFirebaseReady, hostGame } = useMultiplayer();
   const { settings } = useSettings();
+  const { colors } = useTheme();
   const { fs, sh, sw } = useResponsive();
   const [isHosting, setIsHosting] = useState(false);
-  const [hostName, setHostName] = useState("");
 
   const handleAddPlayer = (name: string) => {
     dispatch({ type: "ADD_PLAYER", name });
@@ -38,7 +38,6 @@ export default function PlayerRegistration() {
   };
 
   const handleHostGame = async () => {
-    // Use first player name if available, otherwise prompt for name
     const name = state.players[0]?.name || "Host";
     setIsHosting(true);
     try {
@@ -57,7 +56,7 @@ export default function PlayerRegistration() {
 
   return (
     <LinearGradient
-      colors={[Colors.background, "#1A0A0A"]}
+      colors={[colors.background, colors.backgroundGradientEnd]}
       style={styles.gradient}
     >
       <SafeAreaView style={styles.container}>
@@ -67,11 +66,11 @@ export default function PlayerRegistration() {
         >
           <View style={[styles.header, { marginBottom: sh(32) }]}>
             <Text style={[styles.title, { fontSize: fs(40) }]}>
-              <Text style={styles.titleSmoke}>SMOKE </Text>
-              <Text style={[styles.titleOr, { fontSize: fs(28) }]}>OR </Text>
-              <Text style={styles.titleFire}>FIRE</Text>
+              <Text style={[styles.titleSmoke, { color: colors.textPrimary }]}>SMOKE </Text>
+              <Text style={[styles.titleOr, { fontSize: fs(28), color: colors.textSecondary }]}>OR </Text>
+              <Text style={[styles.titleFire, { color: colors.fire }]}>FIRE</Text>
             </Text>
-            <Text style={[styles.subtitle, { fontSize: fs(16) }]}>
+            <Text style={[styles.subtitle, { fontSize: fs(16), color: colors.textSecondary }]}>
               {state.players.length} player{state.players.length !== 1 ? "s" : ""} added
             </Text>
           </View>
@@ -80,8 +79,11 @@ export default function PlayerRegistration() {
             <View style={{ flex: 1 }}>
               <PlayerInput onAdd={handleAddPlayer} />
             </View>
-            <Pressable onPress={handleOpenSettings} style={styles.settingsButton}>
-              <Text style={[styles.settingsIcon, { fontSize: fs(24) }]}>&#9881;</Text>
+            <Pressable
+              onPress={handleOpenSettings}
+              style={[styles.settingsButton, { backgroundColor: colors.surface }]}
+            >
+              <Text style={[styles.settingsIcon, { fontSize: fs(24), color: colors.textSecondary }]}>&#9881;</Text>
             </Pressable>
           </View>
 
@@ -100,11 +102,11 @@ export default function PlayerRegistration() {
             {isFirebaseReady && (
               <View style={[styles.multiplayerSection, { marginTop: sh(24) }]}>
                 <View style={styles.dividerRow}>
-                  <View style={styles.dividerLine} />
-                  <Text style={[styles.dividerText, { fontSize: fs(12) }]}>
+                  <View style={[styles.dividerLine, { backgroundColor: colors.divider }]} />
+                  <Text style={[styles.dividerText, { fontSize: fs(12), color: colors.textMuted }]}>
                     OR PLAY ONLINE
                   </Text>
-                  <View style={styles.dividerLine} />
+                  <View style={[styles.dividerLine, { backgroundColor: colors.divider }]} />
                 </View>
 
                 <View style={[styles.multiplayerButtons, { gap: sw(12), marginTop: sh(16) }]}>
@@ -125,7 +127,7 @@ export default function PlayerRegistration() {
                   />
                 </View>
                 {state.players.length === 0 && (
-                  <Text style={[styles.hostHint, { fontSize: fs(11), marginTop: sh(8) }]}>
+                  <Text style={[styles.hostHint, { fontSize: fs(11), marginTop: sh(8), color: colors.textMuted }]}>
                     Add your name above to host a game
                   </Text>
                 )}
@@ -163,29 +165,18 @@ const styles = StyleSheet.create({
     height: 50,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: Colors.surface,
     borderRadius: 12,
   },
-  settingsIcon: {
-    color: Colors.textSecondary,
-  },
+  settingsIcon: {},
   title: {
     fontWeight: "900",
     letterSpacing: 4,
     marginBottom: 8,
   },
-  titleSmoke: {
-    color: Colors.white,
-  },
-  titleOr: {
-    color: Colors.textSecondary,
-  },
-  titleFire: {
-    color: Colors.red,
-  },
-  subtitle: {
-    color: Colors.textSecondary,
-  },
+  titleSmoke: {},
+  titleOr: {},
+  titleFire: {},
+  subtitle: {},
   footer: {
     paddingVertical: 20,
     alignItems: "center",
@@ -200,10 +191,8 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: Colors.surfaceLight,
   },
   dividerText: {
-    color: Colors.gray,
     marginHorizontal: 12,
     fontWeight: "600",
     letterSpacing: 1,
@@ -212,7 +201,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
   },
   hostHint: {
-    color: Colors.gray,
     textAlign: "center",
   },
 });

@@ -4,7 +4,7 @@ import Animated from "react-native-reanimated";
 import { Card } from "../types";
 import { useCardAnimation } from "../hooks/useCardAnimation";
 import { SUIT_SYMBOLS } from "../../constants/Cards";
-import { Colors } from "../../constants/Colors";
+import { useTheme } from "../context/ThemeContext";
 import { useResponsive } from "../hooks/useResponsive";
 
 interface PyramidCardProps {
@@ -21,6 +21,7 @@ export default function PyramidCard({
   const { flip, reset, frontAnimatedStyle, backAnimatedStyle } =
     useCardAnimation();
   const { pyramidCard } = useResponsive();
+  const { colors } = useTheme();
 
   const cardWidth = pyramidCard.width;
   const cardHeight = pyramidCard.height;
@@ -35,7 +36,7 @@ export default function PyramidCard({
   }, [revealed, flip, reset]);
 
   const suitSymbol = SUIT_SYMBOLS[card.suit];
-  const suitColor = card.color === "red" ? Colors.red : "#333333";
+  const suitColor = card.color === "red" ? colors.cardSuitRed : colors.cardSuitBlack;
 
   return (
     <View
@@ -54,13 +55,15 @@ export default function PyramidCard({
               height: cardHeight,
               borderRadius: Math.round(10 * ratio),
               padding: Math.round(4 * ratio),
+              backgroundColor: colors.cardBack,
+              borderColor: colors.cardBackAccent,
             },
           ]}
         >
           <View
             style={[
               styles.backInner,
-              { borderRadius: Math.round(7 * ratio) },
+              { borderRadius: Math.round(7 * ratio), borderColor: colors.cardBackAccent },
             ]}
           >
             <View
@@ -69,6 +72,7 @@ export default function PyramidCard({
                 {
                   width: Math.round(14 * ratio),
                   height: Math.round(14 * ratio),
+                  backgroundColor: colors.cardBackAccent,
                 },
               ]}
             />
@@ -85,6 +89,8 @@ export default function PyramidCard({
               width: cardWidth,
               height: cardHeight,
               borderRadius: Math.round(10 * ratio),
+              backgroundColor: colors.cardFace,
+              borderColor: colors.cardFaceBorder,
             },
           ]}
         >
@@ -123,9 +129,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   back: {
-    backgroundColor: Colors.cardBack,
     borderWidth: 1.5,
-    borderColor: Colors.cardBackAccent,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
@@ -135,18 +139,14 @@ const styles = StyleSheet.create({
   backInner: {
     flex: 1,
     borderWidth: 1.5,
-    borderColor: Colors.cardBackAccent,
     alignItems: "center",
     justifyContent: "center",
   },
   backDiamond: {
-    backgroundColor: Colors.cardBackAccent,
     transform: [{ rotate: "45deg" }],
   },
   face: {
-    backgroundColor: Colors.cardFace,
     borderWidth: 1.5,
-    borderColor: "#E0E0E0",
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#000",

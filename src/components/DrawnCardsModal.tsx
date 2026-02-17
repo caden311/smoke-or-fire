@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { Card, Player } from "../types";
 import { SUIT_SYMBOLS } from "../../constants/Cards";
-import { Colors } from "../../constants/Colors";
+import { useTheme } from "../context/ThemeContext";
 
 interface DrawnCardsModalProps {
   visible: boolean;
@@ -24,6 +24,7 @@ export default function DrawnCardsModal({
   playerCards,
   players,
 }: DrawnCardsModalProps) {
+  const { colors } = useTheme();
   const allCards = playerCards.flat();
   const totalDrawn = allCards.length;
 
@@ -41,12 +42,12 @@ export default function DrawnCardsModal({
       transparent
       onRequestClose={onClose}
     >
-      <View style={styles.backdrop}>
-        <View style={styles.container}>
-          <View style={styles.header}>
-            <Text style={styles.title}>Drawn Cards</Text>
-            <Pressable onPress={onClose} style={styles.closeButton}>
-              <Text style={styles.closeText}>CLOSE</Text>
+      <View style={[styles.backdrop, { backgroundColor: colors.overlay }]}>
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
+          <View style={[styles.header, { borderBottomColor: colors.divider }]}>
+            <Text style={[styles.title, { color: colors.textPrimary }]}>Drawn Cards</Text>
+            <Pressable onPress={onClose} style={[styles.closeButton, { borderColor: colors.divider }]}>
+              <Text style={[styles.closeText, { color: colors.textSecondary }]}>CLOSE</Text>
             </Pressable>
           </View>
 
@@ -59,16 +60,16 @@ export default function DrawnCardsModal({
               if (cards.length === 0) return null;
               return (
                 <View key={player.id} style={styles.playerSection}>
-                  <Text style={styles.playerName}>{player.name}</Text>
+                  <Text style={[styles.playerName, { color: colors.textPrimary }]}>{player.name}</Text>
                   <View style={styles.cardsRow}>
                     {cards.map((card, cardIndex) => {
                       const suitSymbol = SUIT_SYMBOLS[card.suit];
                       const chipColor =
                         card.suit === "hearts" || card.suit === "diamonds"
-                          ? Colors.red
-                          : Colors.white;
+                          ? colors.cardSuitRed
+                          : colors.textPrimary;
                       return (
-                        <View key={cardIndex} style={styles.cardChip}>
+                        <View key={cardIndex} style={[styles.cardChip, { backgroundColor: colors.surface, borderColor: colors.divider }]}>
                           <Text style={[styles.chipText, { color: chipColor }]}>
                             {card.value}{suitSymbol}
                           </Text>
@@ -81,11 +82,11 @@ export default function DrawnCardsModal({
             })}
           </ScrollView>
 
-          <View style={styles.footer}>
-            <Text style={styles.footerTotal}>
+          <View style={[styles.footer, { borderTopColor: colors.divider }]}>
+            <Text style={[styles.footerTotal, { color: colors.textSecondary }]}>
               {totalDrawn} of 52 cards drawn
             </Text>
-            <Text style={styles.footerSuits}>
+            <Text style={[styles.footerSuits, { color: colors.textPrimary }]}>
               {SUIT_SYMBOLS.hearts} {suitCounts.hearts}{"  "}
               {SUIT_SYMBOLS.diamonds} {suitCounts.diamonds}{"  "}
               {SUIT_SYMBOLS.clubs} {suitCounts.clubs}{"  "}
@@ -101,11 +102,9 @@ export default function DrawnCardsModal({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.85)",
     justifyContent: "flex-end",
   },
   container: {
-    backgroundColor: Colors.background,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: "85%",
@@ -119,12 +118,10 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.surfaceLight,
   },
   title: {
     fontSize: 22,
     fontWeight: "900",
-    color: Colors.textPrimary,
     letterSpacing: 1,
   },
   closeButton: {
@@ -132,12 +129,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: Colors.surfaceLight,
   },
   closeText: {
     fontSize: 13,
     fontWeight: "800",
-    color: Colors.textSecondary,
     letterSpacing: 1,
   },
   scrollView: {
@@ -150,7 +145,6 @@ const styles = StyleSheet.create({
   playerName: {
     fontSize: 18,
     fontWeight: "800",
-    color: Colors.textPrimary,
     marginBottom: 10,
   },
   cardsRow: {
@@ -159,12 +153,10 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   cardChip: {
-    backgroundColor: Colors.surface,
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderWidth: 1,
-    borderColor: Colors.surfaceLight,
   },
   chipText: {
     fontSize: 16,
@@ -175,17 +167,14 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingHorizontal: 24,
     borderTopWidth: 1,
-    borderTopColor: Colors.surfaceLight,
     gap: 4,
   },
   footerTotal: {
     fontSize: 14,
     fontWeight: "700",
-    color: Colors.textSecondary,
   },
   footerSuits: {
     fontSize: 16,
     fontWeight: "700",
-    color: Colors.textPrimary,
   },
 });

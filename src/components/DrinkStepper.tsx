@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
-import { Colors } from "../../constants/Colors";
+import { useTheme } from "../context/ThemeContext";
 import { useResponsive } from "../hooks/useResponsive";
 import { lightHaptic } from "../utils/haptics";
 
@@ -20,6 +20,7 @@ export default function DrinkStepper({
   max = 10,
 }: DrinkStepperProps) {
   const { fs, sw, sh } = useResponsive();
+  const { colors } = useTheme();
 
   const handleDecrement = () => {
     if (value > min) {
@@ -36,23 +37,23 @@ export default function DrinkStepper({
   };
 
   return (
-    <View style={[styles.container, { paddingHorizontal: sw(16), paddingVertical: sh(14) }]}>
-      <Text style={[styles.label, { fontSize: fs(16) }]}>{label}</Text>
+    <View style={[styles.container, { paddingHorizontal: sw(16), paddingVertical: sh(14), backgroundColor: colors.surface }]}>
+      <Text style={[styles.label, { fontSize: fs(16), color: colors.textPrimary }]}>{label}</Text>
       <View style={styles.stepperContainer}>
         <Pressable
-          style={[styles.stepperButton, value <= min && styles.stepperButtonDisabled]}
+          style={[styles.stepperButton, { backgroundColor: colors.surfaceLight }, value <= min && styles.stepperButtonDisabled]}
           onPress={handleDecrement}
           disabled={value <= min}
         >
-          <Text style={[styles.stepperButtonText, { fontSize: fs(20) }]}>-</Text>
+          <Text style={[styles.stepperButtonText, { fontSize: fs(20), color: colors.textPrimary }]}>-</Text>
         </Pressable>
-        <Text style={[styles.valueText, { fontSize: fs(18), minWidth: sw(40) }]}>{value}</Text>
+        <Text style={[styles.valueText, { fontSize: fs(18), minWidth: sw(40), color: colors.textPrimary }]}>{value}</Text>
         <Pressable
-          style={[styles.stepperButton, value >= max && styles.stepperButtonDisabled]}
+          style={[styles.stepperButton, { backgroundColor: colors.surfaceLight }, value >= max && styles.stepperButtonDisabled]}
           onPress={handleIncrement}
           disabled={value >= max}
         >
-          <Text style={[styles.stepperButtonText, { fontSize: fs(20) }]}>+</Text>
+          <Text style={[styles.stepperButtonText, { fontSize: fs(20), color: colors.textPrimary }]}>+</Text>
         </Pressable>
       </View>
     </View>
@@ -64,13 +65,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: Colors.surface,
     borderRadius: 12,
     marginBottom: 8,
   },
   label: {
     fontWeight: "600",
-    color: Colors.textPrimary,
     flex: 1,
   },
   stepperContainer: {
@@ -82,7 +81,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: Colors.surfaceLight,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -90,11 +88,9 @@ const styles = StyleSheet.create({
     opacity: 0.3,
   },
   stepperButtonText: {
-    color: Colors.white,
     fontWeight: "800",
   },
   valueText: {
-    color: Colors.white,
     fontWeight: "800",
     textAlign: "center",
   },

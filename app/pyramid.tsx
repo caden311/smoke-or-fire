@@ -6,11 +6,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useMultiplayer } from "../src/context/MultiplayerContext";
 import { useGameState } from "../src/hooks/useGameState";
 import { useGameActions } from "../src/hooks/useGameActions";
+import { useTheme } from "../src/context/ThemeContext";
 import PyramidCard from "../src/components/PyramidCard";
 import PyramidResultModal from "../src/components/PyramidResultModal";
 import GiveDrinksModal from "../src/components/GiveDrinksModal";
 import ActionButton from "../src/components/ActionButton";
-import { Colors } from "../constants/Colors";
 import { useResponsive } from "../src/hooks/useResponsive";
 import { DrinkAssignment } from "../src/types";
 
@@ -21,6 +21,7 @@ export default function Pyramid() {
   const { isMultiplayer, isHost, playerId } = useMultiplayer();
   const { state, isLoading } = useGameState();
   const { dispatch } = useGameActions();
+  const { colors } = useTheme();
 
   const [showModal, setShowModal] = useState(false);
   const [flippingRow, setFlippingRow] = useState<number | null>(null);
@@ -109,11 +110,11 @@ export default function Pyramid() {
   // Show loading state
   if (isLoading || !state) {
     return (
-      <LinearGradient colors={[Colors.background, "#0A0A1A"]} style={styles.gradient}>
+      <LinearGradient colors={[colors.background, colors.backgroundGradientEnd]} style={styles.gradient}>
         <SafeAreaView style={styles.container}>
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={Colors.textSecondary} />
-            <Text style={styles.loadingText}>Loading pyramid...</Text>
+            <ActivityIndicator size="large" color={colors.textSecondary} />
+            <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading pyramid...</Text>
           </View>
         </SafeAreaView>
       </LinearGradient>
@@ -184,15 +185,15 @@ export default function Pyramid() {
 
   return (
     <LinearGradient
-      colors={[Colors.background, "#0A0A1A"]}
+      colors={[colors.background, colors.backgroundGradientEnd]}
       style={styles.gradient}
     >
       <SafeAreaView style={styles.container}>
         <View style={[styles.content, { paddingHorizontal: sw(16) }]}>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={[styles.title, { fontSize: fs(28) }]}>FINAL ROUND</Text>
-            <Text style={[styles.subtitle, { fontSize: fs(14) }]}>
+            <Text style={[styles.title, { fontSize: fs(28), color: colors.textPrimary }]}>FINAL ROUND</Text>
+            <Text style={[styles.subtitle, { fontSize: fs(14), color: colors.textSecondary }]}>
               {isMultiplayer && !isHost ? "Watch as the host reveals cards" : "Tap a row to reveal"}
             </Text>
           </View>
@@ -204,7 +205,7 @@ export default function Pyramid() {
               const rowAction = ROW_ACTIONS[rowIdx];
               const rowDrinks = state.settings.pyramidDrinks[rowIdx] ?? (rowIdx + 1);
               const rowLabel = `${rowAction} ${rowDrinks}`;
-              const labelColor = rowAction === "GIVE" ? Colors.green : Colors.red;
+              const labelColor = rowAction === "GIVE" ? colors.success : colors.fire;
 
               const cardRow = (
                 <View
@@ -249,7 +250,7 @@ export default function Pyramid() {
                 // Multiplayer: Show waiting message if I'm not assigning
                 !isMyTurnToAssign && remainingAssignerNames.length > 0 && (
                   <View style={styles.waitingContainer}>
-                    <Text style={[styles.waitingText, { fontSize: fs(16) }]}>
+                    <Text style={[styles.waitingText, { fontSize: fs(16), color: colors.textSecondary }]}>
                       Waiting for {remainingAssignerNames.join(", ")} to assign drinks...
                     </Text>
                   </View>
@@ -306,11 +307,9 @@ const styles = StyleSheet.create({
   },
   title: {
     fontWeight: "900",
-    color: Colors.textPrimary,
     letterSpacing: 4,
   },
   subtitle: {
-    color: Colors.textSecondary,
     marginTop: 4,
   },
   pyramidContainer: {
@@ -347,7 +346,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   loadingText: {
-    color: Colors.textSecondary,
     marginTop: 16,
     fontSize: 18,
   },
@@ -356,7 +354,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   waitingText: {
-    color: Colors.textSecondary,
     textAlign: "center",
     fontWeight: "600",
   },

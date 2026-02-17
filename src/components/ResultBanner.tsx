@@ -1,10 +1,10 @@
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { Text, StyleSheet } from "react-native";
 import Animated, {
   FadeInDown,
   FadeInUp,
 } from "react-native-reanimated";
-import { Colors } from "../../constants/Colors";
+import { useTheme } from "../context/ThemeContext";
 import { Guess, Card } from "../types";
 import { SUIT_SYMBOLS } from "../../constants/Cards";
 import { useResponsive } from "../hooks/useResponsive";
@@ -23,6 +23,7 @@ export default function ResultBanner({
   drinks,
 }: ResultBannerProps) {
   const { fs, s } = useResponsive();
+  const { colors } = useTheme();
   const suitSymbol = SUIT_SYMBOLS[card.suit];
   const guessLabels: Record<Guess, string> = {
     smoke: "Smoke (Black)",
@@ -45,7 +46,7 @@ export default function ResultBanner({
       style={[
         styles.container,
         {
-          backgroundColor: correct ? Colors.green : Colors.red,
+          backgroundColor: correct ? colors.success : colors.fire,
           padding: s(20),
           marginTop: s(20),
         },
@@ -79,12 +80,12 @@ const styles = StyleSheet.create({
   },
   resultText: {
     fontWeight: "900",
-    color: Colors.white,
+    color: "#FFFFFF",
     letterSpacing: 3,
   },
   actionText: {
     fontWeight: "700",
-    color: Colors.white,
+    color: "#FFFFFF",
   },
   detailText: {
     color: "rgba(255,255,255,0.8)",

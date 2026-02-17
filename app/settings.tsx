@@ -4,9 +4,10 @@ import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useSettings } from "../src/context/SettingsContext";
+import { useTheme } from "../src/context/ThemeContext";
 import DrinkStepper from "../src/components/DrinkStepper";
 import ActionButton from "../src/components/ActionButton";
-import { Colors } from "../constants/Colors";
+import ThemeSelector from "../src/components/ThemeSelector";
 import { useResponsive } from "../src/hooks/useResponsive";
 import { GameSettings } from "../src/types";
 
@@ -15,6 +16,7 @@ const PYRAMID_LABELS = ["Row 1 - Give", "Row 2 - Take", "Row 3 - Give", "Row 4 -
 
 export default function Settings() {
   const { settings, updateSettings, resetToDefaults } = useSettings();
+  const { colors } = useTheme();
   const { fs, sh, sw } = useResponsive();
 
   const handleRoundDrinkChange = (index: number, value: number) => {
@@ -35,23 +37,31 @@ export default function Settings() {
 
   return (
     <LinearGradient
-      colors={[Colors.background, "#1A0A0A"]}
+      colors={[colors.background, colors.backgroundGradientEnd]}
       style={styles.gradient}
     >
       <SafeAreaView style={styles.container}>
         <View style={[styles.content, { paddingHorizontal: sw(24) }]}>
           {/* Header */}
           <View style={[styles.header, { marginBottom: sh(24) }]}>
-            <Text style={[styles.title, { fontSize: fs(32) }]}>Settings</Text>
-            <Text style={[styles.subtitle, { fontSize: fs(14) }]}>
+            <Text style={[styles.title, { fontSize: fs(32), color: colors.textPrimary }]}>Settings</Text>
+            <Text style={[styles.subtitle, { fontSize: fs(14), color: colors.textSecondary }]}>
               Configure drink amounts for each round
             </Text>
           </View>
 
           <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+            {/* Appearance Section */}
+            <View style={[styles.section, { marginBottom: sh(24) }]}>
+              <Text style={[styles.sectionTitle, { fontSize: fs(14), marginBottom: sh(12), color: colors.textSecondary }]}>
+                Appearance
+              </Text>
+              <ThemeSelector />
+            </View>
+
             {/* Round Drinks Section */}
             <View style={[styles.section, { marginBottom: sh(24) }]}>
-              <Text style={[styles.sectionTitle, { fontSize: fs(14), marginBottom: sh(12) }]}>
+              <Text style={[styles.sectionTitle, { fontSize: fs(14), marginBottom: sh(12), color: colors.textSecondary }]}>
                 Round Drinks
               </Text>
               {ROUND_LABELS.map((label, index) => (
@@ -66,7 +76,7 @@ export default function Settings() {
 
             {/* Pyramid Drinks Section */}
             <View style={[styles.section, { marginBottom: sh(24) }]}>
-              <Text style={[styles.sectionTitle, { fontSize: fs(14), marginBottom: sh(12) }]}>
+              <Text style={[styles.sectionTitle, { fontSize: fs(14), marginBottom: sh(12), color: colors.textSecondary }]}>
                 Pyramid Drinks
               </Text>
               {PYRAMID_LABELS.map((label, index) => (
@@ -115,11 +125,9 @@ const styles = StyleSheet.create({
   },
   title: {
     fontWeight: "900",
-    color: Colors.textPrimary,
     letterSpacing: 2,
   },
   subtitle: {
-    color: Colors.textSecondary,
     marginTop: 8,
   },
   scrollView: {
@@ -127,7 +135,6 @@ const styles = StyleSheet.create({
   },
   section: {},
   sectionTitle: {
-    color: Colors.textSecondary,
     fontWeight: "700",
     textTransform: "uppercase",
     letterSpacing: 2,

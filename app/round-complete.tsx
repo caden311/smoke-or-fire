@@ -7,8 +7,8 @@ import Animated, { FadeInDown } from "react-native-reanimated";
 import { useMultiplayer } from "../src/context/MultiplayerContext";
 import { useGameState } from "../src/hooks/useGameState";
 import { useGameActions } from "../src/hooks/useGameActions";
+import { useTheme } from "../src/context/ThemeContext";
 import ActionButton from "../src/components/ActionButton";
-import { Colors } from "../constants/Colors";
 import { SUIT_SYMBOLS } from "../constants/Cards";
 import { useResponsive } from "../src/hooks/useResponsive";
 import { DrinkAssignment } from "../src/types";
@@ -30,6 +30,7 @@ export default function RoundComplete() {
   const { isMultiplayer, isHost } = useMultiplayer();
   const { state, isLoading } = useGameState();
   const { dispatch } = useGameActions();
+  const { colors } = useTheme();
   const { fs, sw, sh, s } = useResponsive();
 
   // Navigate when phase changes
@@ -46,11 +47,11 @@ export default function RoundComplete() {
   // Show loading state
   if (isLoading || !state) {
     return (
-      <LinearGradient colors={[Colors.background, "#12061F"]} style={styles.gradient}>
+      <LinearGradient colors={[colors.background, colors.backgroundGradientEnd]} style={styles.gradient}>
         <SafeAreaView style={styles.container}>
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={Colors.textSecondary} />
-            <Text style={styles.loadingText}>Loading results...</Text>
+            <ActivityIndicator size="large" color={colors.textSecondary} />
+            <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading results...</Text>
           </View>
         </SafeAreaView>
       </LinearGradient>
@@ -88,15 +89,15 @@ export default function RoundComplete() {
 
   return (
     <LinearGradient
-      colors={[Colors.background, "#12061F"]}
+      colors={[colors.background, colors.backgroundGradientEnd]}
       style={styles.gradient}
     >
       <SafeAreaView style={styles.container}>
         <View style={[styles.content, { paddingHorizontal: sw(24) }]}>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={[styles.title, { fontSize: fs(32) }]}>Round {state.roundNumber} Complete</Text>
-            <Text style={[styles.statsText, { fontSize: fs(18) }]}>
+            <Text style={[styles.title, { fontSize: fs(32), color: colors.textPrimary }]}>Round {state.roundNumber} Complete</Text>
+            <Text style={[styles.statsText, { fontSize: fs(18), color: colors.textSecondary }]}>
               {correctCount} of {totalPlayers} correct
             </Text>
           </View>
@@ -109,17 +110,17 @@ export default function RoundComplete() {
             {state.turnResults.map((result, index) => {
               const suitSymbol = SUIT_SYMBOLS[result.card.suit];
               const suitColor =
-                result.card.color === "red" ? Colors.red : Colors.white;
+                result.card.color === "red" ? colors.fire : colors.textPrimary;
 
               return (
                 <Animated.View
                   key={index}
                   entering={FadeInDown.delay(index * 100).duration(300)}
-                  style={[styles.resultRow, { paddingHorizontal: sw(16), paddingVertical: sh(14) }]}
+                  style={[styles.resultRow, { paddingHorizontal: sw(16), paddingVertical: sh(14), backgroundColor: colors.surface }]}
                 >
                   <View style={styles.resultLeft}>
-                    <Text style={[styles.resultName, { fontSize: fs(18) }]}>{result.player.name}</Text>
-                    <Text style={[styles.resultGuess, { fontSize: fs(13) }]}>
+                    <Text style={[styles.resultName, { fontSize: fs(18), color: colors.textPrimary }]}>{result.player.name}</Text>
+                    <Text style={[styles.resultGuess, { fontSize: fs(13), color: colors.textSecondary }]}>
                       Guessed {GUESS_LABELS[result.guess] ?? result.guess}
                     </Text>
                   </View>
@@ -134,8 +135,8 @@ export default function RoundComplete() {
                         styles.resultBadge,
                         {
                           backgroundColor: result.correct
-                            ? Colors.green
-                            : Colors.red,
+                            ? colors.success
+                            : colors.fire,
                           paddingHorizontal: sw(10),
                           paddingVertical: sh(4),
                         },
@@ -152,20 +153,20 @@ export default function RoundComplete() {
 
             {/* Drinks Given Section - Multiplayer Only */}
             {isMultiplayer && roundDrinkAssignments.length > 0 && (
-              <View style={[styles.drinksSection, { marginTop: sh(20), paddingTop: sh(16) }]}>
-                <Text style={[styles.drinksSectionTitle, { fontSize: fs(14), marginBottom: sh(12) }]}>
+              <View style={[styles.drinksSection, { marginTop: sh(20), paddingTop: sh(16), borderTopColor: colors.divider }]}>
+                <Text style={[styles.drinksSectionTitle, { fontSize: fs(14), marginBottom: sh(12), color: colors.textSecondary }]}>
                   Drinks Given
                 </Text>
                 {roundDrinkAssignments.map((assignment, index) => (
                   <Animated.View
                     key={assignment.id}
                     entering={FadeInDown.delay(state.turnResults.length * 100 + index * 80).duration(250)}
-                    style={[styles.drinkRow, { paddingHorizontal: sw(16), paddingVertical: sh(10) }]}
+                    style={[styles.drinkRow, { paddingHorizontal: sw(16), paddingVertical: sh(10), backgroundColor: colors.surface }]}
                   >
-                    <Text style={[styles.drinkText, { fontSize: fs(16) }]}>
+                    <Text style={[styles.drinkText, { fontSize: fs(16), color: colors.textPrimary }]}>
                       {assignment.fromPlayerName} → {assignment.toPlayerName}
                     </Text>
-                    <Text style={[styles.drinkAmount, { fontSize: fs(14) }]}>
+                    <Text style={[styles.drinkAmount, { fontSize: fs(14), color: colors.accent }]}>
                       {assignment.amount} {assignment.amount === 1 ? "drink" : "drinks"}
                     </Text>
                   </Animated.View>
@@ -191,7 +192,7 @@ export default function RoundComplete() {
                 />
               )
             ) : (
-              <Text style={[styles.waitingText, { fontSize: fs(16) }]}>
+              <Text style={[styles.waitingText, { fontSize: fs(16), color: colors.textSecondary }]}>
                 Waiting for host to continue...
               </Text>
             )}
@@ -219,11 +220,9 @@ const styles = StyleSheet.create({
   },
   title: {
     fontWeight: "900",
-    color: Colors.textPrimary,
     letterSpacing: 2,
   },
   statsText: {
-    color: Colors.textSecondary,
     marginTop: 8,
   },
   resultsList: {
@@ -233,7 +232,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: Colors.surface,
     borderRadius: 12,
     marginBottom: 8,
   },
@@ -242,10 +240,8 @@ const styles = StyleSheet.create({
   },
   resultName: {
     fontWeight: "700",
-    color: Colors.textPrimary,
   },
   resultGuess: {
-    color: Colors.textSecondary,
     marginTop: 2,
   },
   resultRight: {
@@ -260,7 +256,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   resultBadgeText: {
-    color: Colors.white,
+    color: "#FFFFFF",
     fontWeight: "800",
     letterSpacing: 1,
   },
@@ -269,7 +265,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   waitingText: {
-    color: Colors.textSecondary,
     fontStyle: "italic",
   },
   loadingContainer: {
@@ -278,16 +273,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   loadingText: {
-    color: Colors.textSecondary,
     marginTop: 16,
     fontSize: 18,
   },
   drinksSection: {
     borderTopWidth: 1,
-    borderTopColor: Colors.gray,
   },
   drinksSectionTitle: {
-    color: Colors.textSecondary,
     fontWeight: "700",
     textTransform: "uppercase",
     letterSpacing: 2,
@@ -297,16 +289,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: Colors.surface,
     borderRadius: 10,
     marginBottom: 6,
   },
   drinkText: {
-    color: Colors.textPrimary,
     fontWeight: "600",
   },
   drinkAmount: {
-    color: Colors.gold,
     fontWeight: "700",
   },
 });

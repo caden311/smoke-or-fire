@@ -11,7 +11,7 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
 } from "react-native-reanimated";
-import { Colors } from "../../constants/Colors";
+import { useTheme } from "../context/ThemeContext";
 import { lightHaptic } from "../utils/haptics";
 import { useResponsive } from "../hooks/useResponsive";
 
@@ -36,6 +36,7 @@ export default function ActionButton({
 }: ActionButtonProps) {
   const scale = useSharedValue(1);
   const { fs, sw, sh } = useResponsive();
+  const { colors } = useTheme();
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -55,35 +56,35 @@ export default function ActionButton({
   };
 
   const bgColor = {
-    primary: Colors.red,
-    smoke: Colors.surfaceLight,
-    fire: Colors.red,
-    higher: Colors.green,
-    lower: Colors.surfaceLight,
-    inside: Colors.green,
-    outside: Colors.surfaceLight,
-    success: Colors.green,
+    primary: colors.fire,
+    smoke: colors.buttonSecondary,
+    fire: colors.fire,
+    higher: colors.success,
+    lower: colors.buttonSecondary,
+    inside: colors.success,
+    outside: colors.buttonSecondary,
+    success: colors.success,
     ghost: "transparent",
-    hearts: Colors.red,
-    diamonds: Colors.red,
-    clubs: Colors.surfaceLight,
-    spades: Colors.surfaceLight,
+    hearts: colors.fire,
+    diamonds: colors.fire,
+    clubs: colors.buttonSecondary,
+    spades: colors.buttonSecondary,
   }[variant];
 
-  const textColor = {
-    primary: Colors.white,
-    smoke: Colors.white,
-    fire: Colors.white,
-    higher: Colors.white,
-    lower: Colors.white,
-    inside: Colors.white,
-    outside: Colors.white,
-    success: Colors.white,
-    ghost: Colors.textSecondary,
-    hearts: Colors.white,
-    diamonds: Colors.white,
-    clubs: Colors.white,
-    spades: Colors.white,
+  const txtColor = {
+    primary: "#FFFFFF",
+    smoke: colors.textPrimary,
+    fire: "#FFFFFF",
+    higher: "#FFFFFF",
+    lower: colors.textPrimary,
+    inside: "#FFFFFF",
+    outside: colors.textPrimary,
+    success: "#FFFFFF",
+    ghost: colors.textSecondary,
+    hearts: "#FFFFFF",
+    diamonds: "#FFFFFF",
+    clubs: colors.textPrimary,
+    spades: colors.textPrimary,
   }[variant];
 
   return (
@@ -100,7 +101,7 @@ export default function ActionButton({
           paddingHorizontal: sw(32),
           minWidth: sw(120),
         },
-        variant === "ghost" && styles.ghostBorder,
+        variant === "ghost" && { borderWidth: 1, borderColor: colors.divider },
         disabled && styles.disabled,
         animatedStyle,
         style,
@@ -109,7 +110,7 @@ export default function ActionButton({
       <Text
         style={[
           styles.text,
-          { color: textColor, fontSize: fs(18) },
+          { color: txtColor, fontSize: fs(18) },
           disabled && styles.disabledText,
           textStyle,
         ]}
@@ -130,10 +131,6 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     textTransform: "uppercase",
     letterSpacing: 2,
-  },
-  ghostBorder: {
-    borderWidth: 1,
-    borderColor: Colors.surfaceLight,
   },
   disabled: {
     opacity: 0.4,

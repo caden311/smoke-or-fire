@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Card } from "../types";
 import { SUIT_SYMBOLS } from "../../constants/Cards";
-import { Colors } from "../../constants/Colors";
+import { useTheme } from "../context/ThemeContext";
 
 interface CardFaceProps {
   card: Card;
@@ -11,8 +11,9 @@ interface CardFaceProps {
 }
 
 export default function CardFace({ card, width = 136, height = 220 }: CardFaceProps) {
+  const { colors } = useTheme();
   const suitSymbol = SUIT_SYMBOLS[card.suit];
-  const suitColor = card.color === "red" ? Colors.red : "#333333";
+  const suitColor = card.color === "red" ? colors.cardSuitRed : colors.cardSuitBlack;
   const ratio = width / 136;
 
   return (
@@ -24,6 +25,8 @@ export default function CardFace({ card, width = 136, height = 220 }: CardFacePr
           height,
           borderRadius: Math.round(16 * ratio),
           padding: Math.round(12 * ratio),
+          backgroundColor: colors.cardFace,
+          borderColor: colors.cardFaceBorder,
         },
       ]}
     >
@@ -89,11 +92,9 @@ export default function CardFace({ card, width = 136, height = 220 }: CardFacePr
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: Colors.cardFace,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 2,
-    borderColor: "#E0E0E0",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
