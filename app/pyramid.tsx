@@ -226,13 +226,16 @@ export default function Pyramid() {
                   <Text style={[styles.rowLabel, { color: labelColor, fontSize: fs(11) }]}>
                     {rowLabel}
                   </Text>
-                  {isActiveRow && !allRevealed && canInteract ? (
-                    <Pressable onPress={() => handleRowPress(rowIdx)}>
-                      {cardRow}
-                    </Pressable>
-                  ) : (
-                    cardRow
-                  )}
+                  <View style={styles.rowCards}>
+                    {isActiveRow && !allRevealed && canInteract ? (
+                      <Pressable onPress={() => handleRowPress(rowIdx)}>
+                        {cardRow}
+                      </Pressable>
+                    ) : (
+                      cardRow
+                    )}
+                  </View>
+                  <View style={styles.rowLabelSpacer} />
                 </View>
               );
             })}
@@ -318,7 +321,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   rowContainer: {
+    flexDirection: "row",
     alignItems: "center",
+    alignSelf: "stretch",
+    justifyContent: "center",
   },
   row: {
     flexDirection: "row",
@@ -333,8 +339,15 @@ const styles = StyleSheet.create({
   rowLabel: {
     fontWeight: "800",
     letterSpacing: 1,
-    textAlign: "center",
-    marginBottom: 4,
+    textAlign: "right",
+    width: 64,
+    paddingRight: 8,
+  },
+  rowCards: {
+    alignItems: "center",
+  },
+  rowLabelSpacer: {
+    width: 64,
   },
   arrowButton: {
     position: "absolute",

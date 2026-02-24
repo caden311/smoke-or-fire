@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef } from "react";
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
@@ -19,6 +19,7 @@ export default function PyramidComplete() {
   const { showInterstitialAd } = useAds();
   const { colors } = useTheme();
   const { fs, sw, sh } = useResponsive();
+  const isNavigatingRef = useRef(false);
 
   // Show loading state
   if (isLoading || !state) {
@@ -71,9 +72,11 @@ export default function PyramidComplete() {
   );
 
   const handlePlayAgain = async () => {
+    if (isNavigatingRef.current) return;
+    isNavigatingRef.current = true;
     await showInterstitialAd();
     await leaveGame();
-    await dispatch({ type: "RESET" });
+    dispatch({ type: "RESET" });
     router.replace("/");
   };
 

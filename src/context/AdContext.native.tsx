@@ -1,11 +1,10 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from "react";
 import { Platform } from "react-native";
 import { InterstitialAd, AdEventType } from "react-native-google-mobile-ads";
 import { fetchRemoteConfig } from "../services/firebase";
 
-// Test ad unit IDs for development
 const AD_UNIT_IDS = {
-  ios: "ca-app-pub-3940256099942544/4411468910",
+  ios: "ca-app-pub-8700976366260814/1896573277",
   android: "ca-app-pub-3940256099942544/1033173712",
 };
 
@@ -33,6 +32,8 @@ export function AdProvider({ children }: AdProviderProps) {
   const [adsEnabled, setAdsEnabled] = useState(false);
   const [isAdLoaded, setIsAdLoaded] = useState(false);
   const [interstitial, setInterstitial] = useState<InterstitialAd | null>(null);
+  const interstitialRef = useRef<InterstitialAd | null>(null);
+  const loadWaitersRef = useRef<Array<(loaded: boolean) => void>>([]);
 
   // Fetch remote config on mount
   useEffect(() => {
@@ -65,6 +66,9 @@ export function AdProvider({ children }: AdProviderProps) {
       () => {
         console.log("[AD] Interstitial ad loaded");
         setIsAdLoaded(true);
+        const waiters = loadWaitersRef.current;
+        loadWaitersRef.current = [];
+        waiters.forEach((resolve) => resolve(true));
       }
     );
 
@@ -73,6 +77,11 @@ export function AdProvider({ children }: AdProviderProps) {
       (error: any) => {
         console.error("[AD] Interstitial ad failed to load:", error);
         setIsAdLoaded(false);
+        const waiters = loadWaitersRef.current;
+        loadWaitersRef.current = [];
+        waiters.forEach((resolve) => resolve(false));
+        console.log("[AD] Retrying ad load in 30s...");
+        setTimeout(() => interstitialAd.load(), 30_000);
       }
     );
 
@@ -88,6 +97,7 @@ export function AdProvider({ children }: AdProviderProps) {
 
     // Load the ad
     interstitialAd.load();
+    interstitialRef.current = interstitialAd;
     setInterstitial(interstitialAd);
 
     return () => {
@@ -98,21 +108,36 @@ export function AdProvider({ children }: AdProviderProps) {
   }, [adsEnabled]);
 
   const showInterstitialAd = useCallback(async (): Promise<void> => {
-    // Skip if ads disabled or ad not loaded
     if (!adsEnabled) {
       console.log("[AD] Ads disabled, skipping interstitial");
       return;
     }
 
-    if (!isAdLoaded || !interstitial) {
-      console.log("[AD] Ad not loaded, skipping interstitial");
-      return;
+    let adToShow = interstitialRef.current;
+
+    if (!isAdLoaded || !adToShow) {
+      // Ad may still be loading — wait up to 5s
+      console.log("[AD] Ad not yet loaded, waiting up to 5s...");
+      const loaded = await new Promise<boolean>((resolve) => {
+        const timeout = setTimeout(() => resolve(false), 5000);
+        loadWaitersRef.current.push((result) => {
+          clearTimeout(timeout);
+          resolve(result);
+        });
+      });
+
+      if (!loaded || !interstitialRef.current) {
+        console.log("[AD] Ad did not load in time, skipping");
+        return;
+      }
+
+      adToShow = interstitialRef.current;
     }
 
     console.log("[AD] Showing interstitial ad");
 
     return new Promise((resolve) => {
-      const unsubscribeClosed = interstitial.addAdEventListener(
+      const unsubscribeClosed = adToShow!.addAdEventListener(
         AdEventType.CLOSED,
         () => {
           unsubscribeClosed();
@@ -120,13 +145,13 @@ export function AdProvider({ children }: AdProviderProps) {
         }
       );
 
-      interstitial.show().catch((error: any) => {
+      adToShow!.show().catch((error: any) => {
         console.error("[AD] Failed to show interstitial:", error);
         unsubscribeClosed();
-        resolve(); // Continue even if ad fails
+        resolve();
       });
     });
-  }, [adsEnabled, isAdLoaded, interstitial]);
+  }, [adsEnabled, isAdLoaded]);
 
   return (
     <AdContext.Provider value={{ adsEnabled, showInterstitialAd, isAdLoaded }}>

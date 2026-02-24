@@ -56,7 +56,7 @@ export function MultiplayerProvider({ children }: { children: React.ReactNode })
   const [room, setRoom] = useState<Room | null>(null);
   const [isHost, setIsHost] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<"disconnected" | "connecting" | "connected">("disconnected");
-  const [multiplayerEnabled, setMultiplayerEnabled] = useState(true);
+  const [multiplayerEnabled, setMultiplayerEnabled] = useState(false);
 
   const unsubscribeRoomRef = useRef<(() => void) | null>(null);
 
