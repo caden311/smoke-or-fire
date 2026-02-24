@@ -19,9 +19,11 @@ export default function PlayerRegistration() {
   const { colors } = useTheme();
   const { fs, sh, sw } = useResponsive();
   const [isHosting, setIsHosting] = useState(false);
+  const [showInputError, setShowInputError] = useState(false);
 
   const handleAddPlayer = (name: string) => {
     dispatch({ type: "ADD_PLAYER", name });
+    setShowInputError(false);
   };
 
   const handleRemovePlayer = (id: string) => {
@@ -29,6 +31,10 @@ export default function PlayerRegistration() {
   };
 
   const handleStartGame = () => {
+    if (state.players.length < 2) {
+      setShowInputError(true);
+      return;
+    }
     dispatch({ type: "START_GAME", settings });
     router.replace("/game");
   };
@@ -51,8 +57,6 @@ export default function PlayerRegistration() {
   const handleJoinGame = () => {
     router.replace("/join");
   };
-
-  const canStart = state.players.length >= 2;
 
   return (
     <LinearGradient
@@ -77,7 +81,7 @@ export default function PlayerRegistration() {
 
           <View style={styles.inputRow}>
             <View style={{ flex: 1 }}>
-              <PlayerInput onAdd={handleAddPlayer} />
+              <PlayerInput onAdd={handleAddPlayer} showError={showInputError} />
             </View>
             <Pressable
               onPress={handleOpenSettings}
@@ -94,9 +98,8 @@ export default function PlayerRegistration() {
 
           <View style={styles.footer}>
             <ActionButton
-              title="Start Local Game"
+              title={isFirebaseReady ? "Start Local Game" : "Start Game"}
               onPress={handleStartGame}
-              disabled={!canStart}
             />
 
             {isFirebaseReady && (

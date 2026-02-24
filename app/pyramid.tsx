@@ -8,14 +8,12 @@ import { useGameState } from "../src/hooks/useGameState";
 import { useGameActions } from "../src/hooks/useGameActions";
 import { useTheme } from "../src/context/ThemeContext";
 import PyramidCard from "../src/components/PyramidCard";
-import PyramidResultModal from "../src/components/PyramidResultModal";
 import GiveDrinksModal from "../src/components/GiveDrinksModal";
-import ActionButton from "../src/components/ActionButton";
 import { useResponsive } from "../src/hooks/useResponsive";
-import { DrinkAssignment } from "../src/types";
+import { DrinkAssignment, PyramidMatch } from "../src/types";
 
 const PYRAMID_ROWS = [[0], [1, 2], [3, 4, 5], [6, 7], [8]];
-const ROW_ACTIONS = ["GIVE", "TAKE", "GIVE", "TAKE", "GIVE"];
+const ROW_ACTIONS: ("give" | "take")[] = ["give", "take", "give", "take", "give"];
 
 export default function Pyramid() {
   const { isMultiplayer, isHost, playerId } = useMultiplayer();
@@ -23,31 +21,36 @@ export default function Pyramid() {
   const { dispatch } = useGameActions();
   const { colors } = useTheme();
 
-  const [showModal, setShowModal] = useState(false);
   const [flippingRow, setFlippingRow] = useState<number | null>(null);
-  const [lastRevealedRow, setLastRevealedRow] = useState<number | null>(null);
   const [showDrinkAssignment, setShowDrinkAssignment] = useState(false);
   const { fs, sw, sh } = useResponsive();
 
-  // Track when pyramid row changes to show modal for non-host
-  const prevCurrentRowRef = React.useRef<number | null>(null);
-
-  // Effect: Show modal when row is revealed (for non-host watching)
-  useEffect(() => {
-    if (!state || !isMultiplayer || isHost) return;
-
-    const currentRow = state.pyramidCurrentRow;
-    const prevRow = prevCurrentRowRef.current;
-
-    // If row advanced, show the modal for the newly revealed row
-    if (prevRow !== null && currentRow > prevRow) {
-      const revealedRow = currentRow - 1;
-      setLastRevealedRow(revealedRow);
-      setShowModal(true);
+  // Build lookup of matches by card index from pyramidResults
+  const matchesByCardIndex = useMemo(() => {
+    if (!state) return {} as Record<number, PyramidMatch[]>;
+    const map: Record<number, PyramidMatch[]> = {};
+    for (const result of state.pyramidResults) {
+      map[result.cardIndex] = result.matches;
     }
+    return map;
+  }, [state?.pyramidResults]);
 
-    prevCurrentRowRef.current = currentRow;
-  }, [state?.pyramidCurrentRow, isMultiplayer, isHost]);
+  // Calculate cumulative drinks to give and take
+  const drinkTally = useMemo(() => {
+    if (!state) return { give: 0, take: 0 };
+    let give = 0;
+    let take = 0;
+    for (const result of state.pyramidResults) {
+      for (const match of result.matches) {
+        if (result.action === "give") {
+          give += match.drinks;
+        } else {
+          take += match.drinks;
+        }
+      }
+    }
+    return { give, take };
+  }, [state?.pyramidResults]);
 
   // Drink assignment state - all players with drinks can assign simultaneously
   const inDrinkAssignmentPhase = state && state.pyramidPendingAssigners.length > 0;
@@ -90,22 +93,13 @@ export default function Pyramid() {
   const allRevealed = state?.pyramidRevealed.every(Boolean) ?? false;
   const allAssignmentsComplete = allRevealed && state?.pyramidPendingAssigners.length === 0;
 
-  // Edge case: Show drink modal when all revealed but no result modal is showing
-  // This handles the case where a player has drinks to assign but the result modal
-  // was never shown to them (e.g., they're not the host and already dismissed their modal)
+  // Show drink assignment modal when all cards revealed and player has drinks to assign
   // Only applies to multiplayer - local mode doesn't use drink assignment modal
   useEffect(() => {
-    if (isMultiplayer && allRevealed && isMyTurnToAssign && !showModal && !showDrinkAssignment) {
+    if (isMultiplayer && allRevealed && isMyTurnToAssign && !showDrinkAssignment) {
       setShowDrinkAssignment(true);
     }
-  }, [isMultiplayer, allRevealed, isMyTurnToAssign, showModal, showDrinkAssignment]);
-
-  // Navigate to results when all cards revealed and all assignments done
-  useEffect(() => {
-    if (allAssignmentsComplete) {
-      router.replace("/pyramid-complete");
-    }
-  }, [allAssignmentsComplete]);
+  }, [isMultiplayer, allRevealed, isMyTurnToAssign, showDrinkAssignment]);
 
   // Show loading state
   if (isLoading || !state) {
@@ -135,25 +129,10 @@ export default function Pyramid() {
 
     await dispatch({ type: "REVEAL_PYRAMID_ROW" });
 
-    // Show modal after flip animation
+    // Clear flipping state after animation completes
     setTimeout(() => {
-      setLastRevealedRow(rowIdx);
-      setShowModal(true);
       setFlippingRow(null);
     }, 650);
-  };
-
-  const handleCloseModal = () => {
-    setShowModal(false);
-    setLastRevealedRow(null);
-
-    // After closing result modal, check if I need to assign drinks (multiplayer only)
-    // Small delay to ensure modal is fully dismissed before showing next one
-    if (isMultiplayer && isMyTurnToAssign && !showDrinkAssignment) {
-      setTimeout(() => {
-        setShowDrinkAssignment(true);
-      }, 100);
-    }
   };
 
   const handleSeeResults = () => {
@@ -175,12 +154,6 @@ export default function Pyramid() {
     });
   };
 
-  // Filter results for the last revealed row
-  const modalResults =
-    lastRevealedRow !== null
-      ? state.pyramidResults.filter((r) => r.row === lastRevealedRow)
-      : [];
-
   const canInteract = !isMultiplayer || isHost;
 
   return (
@@ -198,14 +171,34 @@ export default function Pyramid() {
             </Text>
           </View>
 
+          {/* Running Tally Badge */}
+          {(drinkTally.give > 0 || drinkTally.take > 0) && (
+            <View style={styles.tallyContainer}>
+              {drinkTally.give > 0 && (
+                <View style={[styles.tallyBadge, { backgroundColor: colors.success + "20" }]}>
+                  <Text style={[styles.tallyText, { color: colors.success, fontSize: fs(12) }]}>
+                    Give: {drinkTally.give}
+                  </Text>
+                </View>
+              )}
+              {drinkTally.take > 0 && (
+                <View style={[styles.tallyBadge, { backgroundColor: colors.fire + "20" }]}>
+                  <Text style={[styles.tallyText, { color: colors.fire, fontSize: fs(12) }]}>
+                    Take: {drinkTally.take}
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
+
           {/* Diamond Grid */}
           <View style={[styles.pyramidContainer, { gap: sh(8) }]}>
             {PYRAMID_ROWS.map((rowIndices, rowIdx) => {
               const isActiveRow = rowIdx === state.pyramidCurrentRow;
               const rowAction = ROW_ACTIONS[rowIdx];
               const rowDrinks = state.settings.pyramidDrinks[rowIdx] ?? (rowIdx + 1);
-              const rowLabel = `${rowAction} ${rowDrinks}`;
-              const labelColor = rowAction === "GIVE" ? colors.success : colors.fire;
+              const rowLabel = `${rowAction.toUpperCase()} ${rowDrinks}`;
+              const labelColor = rowAction === "give" ? colors.success : colors.fire;
 
               const cardRow = (
                 <View
@@ -221,6 +214,8 @@ export default function Pyramid() {
                       card={state.pyramidCards[cardIdx]}
                       revealed={state.pyramidRevealed[cardIdx]}
                       active={isActiveRow && !allRevealed && canInteract}
+                      matches={matchesByCardIndex[cardIdx] || []}
+                      action={rowAction}
                     />
                   ))}
                 </View>
@@ -243,36 +238,26 @@ export default function Pyramid() {
             })}
           </View>
 
-          {/* Footer: Drink assignment or See Results */}
-          {allRevealed && (
-            <View style={styles.footer}>
-              {inDrinkAssignmentPhase && isMultiplayer ? (
-                // Multiplayer: Show waiting message if I'm not assigning
-                !isMyTurnToAssign && remainingAssignerNames.length > 0 && (
-                  <View style={styles.waitingContainer}>
-                    <Text style={[styles.waitingText, { fontSize: fs(16), color: colors.textSecondary }]}>
-                      Waiting for {remainingAssignerNames.join(", ")} to assign drinks...
-                    </Text>
-                  </View>
-                )
-              ) : (
-                // Local mode OR all assignments complete: show results button
-                <ActionButton
-                  title="See Results"
-                  variant="primary"
-                  onPress={handleSeeResults}
-                />
-              )}
+          {/* Waiting message for multiplayer non-assigners */}
+          {allRevealed && inDrinkAssignmentPhase && isMultiplayer && !isMyTurnToAssign && remainingAssignerNames.length > 0 && (
+            <View style={styles.waitingContainer}>
+              <Text style={[styles.waitingText, { fontSize: fs(16), color: colors.textSecondary }]}>
+                Waiting for {remainingAssignerNames.join(", ")} to assign drinks...
+              </Text>
             </View>
           )}
         </View>
-      </SafeAreaView>
 
-      <PyramidResultModal
-        visible={showModal}
-        results={modalResults}
-        onClose={handleCloseModal}
-      />
+        {/* Floating arrow button — visible when all revealed and no pending assignments */}
+        {allRevealed && (!isMultiplayer || !inDrinkAssignmentPhase) && canInteract && (
+          <Pressable
+            style={[styles.arrowButton, { backgroundColor: colors.fire }]}
+            onPress={handleSeeResults}
+          >
+            <Text style={styles.arrowText}>›</Text>
+          </Pressable>
+        )}
+      </SafeAreaView>
 
       {currentAssigningPlayer && isMultiplayer && (
         <GiveDrinksModal
@@ -286,6 +271,7 @@ export default function Pyramid() {
           allowSkip={false}
         />
       )}
+
     </LinearGradient>
   );
 }
@@ -312,6 +298,20 @@ const styles = StyleSheet.create({
   subtitle: {
     marginTop: 4,
   },
+  tallyContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 12,
+    marginBottom: 12,
+  },
+  tallyBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  tallyText: {
+    fontWeight: "700",
+  },
   pyramidContainer: {
     flex: 1,
     justifyContent: "center",
@@ -336,9 +336,27 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 4,
   },
-  footer: {
-    paddingVertical: 20,
+  arrowButton: {
+    position: "absolute",
+    bottom: 32,
+    right: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 6,
+  },
+  arrowText: {
+    color: "#FFFFFF",
+    fontSize: 32,
+    fontWeight: "700",
+    lineHeight: 36,
+    marginLeft: 3,
   },
   loadingContainer: {
     flex: 1,

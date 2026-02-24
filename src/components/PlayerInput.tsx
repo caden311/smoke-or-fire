@@ -1,15 +1,39 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, TextInput, Pressable, Text, StyleSheet } from "react-native";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSequence,
+  withTiming,
+} from "react-native-reanimated";
 import { useTheme } from "../context/ThemeContext";
 import { lightHaptic } from "../utils/haptics";
 
 interface PlayerInputProps {
   onAdd: (name: string) => void;
+  showError?: boolean;
 }
 
-export default function PlayerInput({ onAdd }: PlayerInputProps) {
+export default function PlayerInput({ onAdd, showError }: PlayerInputProps) {
   const [name, setName] = useState("");
   const { colors } = useTheme();
+  const shakeX = useSharedValue(0);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: shakeX.value }],
+  }));
+
+  useEffect(() => {
+    if (showError) {
+      shakeX.value = withSequence(
+        withTiming(-8, { duration: 50 }),
+        withTiming(8, { duration: 50 }),
+        withTiming(-6, { duration: 50 }),
+        withTiming(6, { duration: 50 }),
+        withTiming(0, { duration: 50 })
+      );
+    }
+  }, [showError]);
 
   const handleAdd = () => {
     const trimmed = name.trim();
@@ -20,14 +44,14 @@ export default function PlayerInput({ onAdd }: PlayerInputProps) {
   };
 
   return (
-    <View style={styles.container}>
+    <Animated.View style={[styles.container, animatedStyle]}>
       <TextInput
         style={[
           styles.input,
           {
             backgroundColor: colors.surface,
             color: colors.textPrimary,
-            borderColor: colors.divider,
+            borderColor: showError ? colors.fire : colors.divider,
           },
         ]}
         value={name}
@@ -50,7 +74,7 @@ export default function PlayerInput({ onAdd }: PlayerInputProps) {
       >
         <Text style={styles.addButtonText}>+</Text>
       </Pressable>
-    </View>
+    </Animated.View>
   );
 }
 
