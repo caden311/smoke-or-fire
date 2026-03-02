@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
@@ -20,6 +20,7 @@ export default function PyramidComplete() {
   const { colors } = useTheme();
   const { fs, sw, sh } = useResponsive();
   const isNavigatingRef = useRef(false);
+  const [isNavigating, setIsNavigating] = useState(false);
 
   // Show loading state
   if (isLoading || !state) {
@@ -74,6 +75,7 @@ export default function PyramidComplete() {
   const handlePlayAgain = async () => {
     if (isNavigatingRef.current) return;
     isNavigatingRef.current = true;
+    setIsNavigating(true);
     await showInterstitialAd();
     await leaveGame();
     dispatch({ type: "RESET" });
@@ -156,9 +158,10 @@ export default function PyramidComplete() {
           {/* Play Again */}
           <View style={styles.footer}>
             <ActionButton
-              title="Play Again"
+              title={isNavigating ? "Loading..." : "Play Again"}
               variant="primary"
               onPress={handlePlayAgain}
+              disabled={isNavigating}
             />
           </View>
         </View>

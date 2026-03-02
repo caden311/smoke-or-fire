@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from "react";
 import { Platform } from "react-native";
 import { InterstitialAd, AdEventType } from "react-native-google-mobile-ads";
+import { requestTrackingPermissionsAsync } from "expo-tracking-transparency";
 import { fetchRemoteConfig } from "../services/firebase";
 
 const AD_UNIT_IDS = {
@@ -34,6 +35,7 @@ export function AdProvider({ children }: AdProviderProps) {
   const [interstitial, setInterstitial] = useState<InterstitialAd | null>(null);
   const interstitialRef = useRef<InterstitialAd | null>(null);
   const loadWaitersRef = useRef<Array<(loaded: boolean) => void>>([]);
+  const cleanupRef = useRef<(() => void) | null>(null);
 
   // Fetch remote config on mount
   useEffect(() => {
@@ -54,60 +56,83 @@ export function AdProvider({ children }: AdProviderProps) {
       return;
     }
 
-    const adUnitId = Platform.OS === "ios" ? AD_UNIT_IDS.ios : AD_UNIT_IDS.android;
-    console.log("[AD] Creating interstitial ad with unit:", adUnitId);
+    let cancelled = false;
 
-    const interstitialAd = InterstitialAd.createForAdRequest(adUnitId, {
-      requestNonPersonalizedAdsOnly: true,
-    });
-
-    const unsubscribeLoaded = interstitialAd.addAdEventListener(
-      AdEventType.LOADED,
-      () => {
-        console.log("[AD] Interstitial ad loaded");
-        setIsAdLoaded(true);
-        const waiters = loadWaitersRef.current;
-        loadWaitersRef.current = [];
-        waiters.forEach((resolve) => resolve(true));
+    const initAd = async () => {
+      // Request ATT on iOS; non-iOS defaults to non-personalized
+      let nonPersonalized = true;
+      if (Platform.OS === "ios") {
+        const { status } = await requestTrackingPermissionsAsync();
+        console.log("[AD] ATT tracking status:", status);
+        nonPersonalized = status !== "granted";
       }
-    );
 
-    const unsubscribeError = interstitialAd.addAdEventListener(
-      AdEventType.ERROR,
-      (error: any) => {
-        console.error("[AD] Interstitial ad failed to load:", error);
-        setIsAdLoaded(false);
-        const waiters = loadWaitersRef.current;
-        loadWaitersRef.current = [];
-        waiters.forEach((resolve) => resolve(false));
-        console.log("[AD] Retrying ad load in 30s...");
-        setTimeout(() => interstitialAd.load(), 30_000);
-      }
-    );
+      if (cancelled) return;
 
-    const unsubscribeClosed = interstitialAd.addAdEventListener(
-      AdEventType.CLOSED,
-      () => {
-        console.log("[AD] Interstitial ad closed, reloading...");
-        setIsAdLoaded(false);
-        // Reload ad for next time
-        interstitialAd.load();
-      }
-    );
+      const adUnitId = Platform.OS === "ios" ? AD_UNIT_IDS.ios : AD_UNIT_IDS.android;
+      console.log("[AD] Creating interstitial ad with unit:", adUnitId);
 
-    // Load the ad
-    interstitialAd.load();
-    interstitialRef.current = interstitialAd;
-    setInterstitial(interstitialAd);
+      const interstitialAd = InterstitialAd.createForAdRequest(adUnitId, {
+        requestNonPersonalizedAdsOnly: nonPersonalized,
+      });
+
+      const unsubscribeLoaded = interstitialAd.addAdEventListener(
+        AdEventType.LOADED,
+        () => {
+          console.log("[AD] Interstitial ad loaded");
+          setIsAdLoaded(true);
+          const waiters = loadWaitersRef.current;
+          loadWaitersRef.current = [];
+          waiters.forEach((resolve) => resolve(true));
+        }
+      );
+
+      const unsubscribeError = interstitialAd.addAdEventListener(
+        AdEventType.ERROR,
+        (error: any) => {
+          console.error("[AD] Interstitial ad failed to load:", error);
+          setIsAdLoaded(false);
+          const waiters = loadWaitersRef.current;
+          loadWaitersRef.current = [];
+          waiters.forEach((resolve) => resolve(false));
+          console.log("[AD] Retrying ad load in 30s...");
+          setTimeout(() => interstitialAd.load(), 30_000);
+        }
+      );
+
+      const unsubscribeClosed = interstitialAd.addAdEventListener(
+        AdEventType.CLOSED,
+        () => {
+          console.log("[AD] Interstitial ad closed, reloading...");
+          setIsAdLoaded(false);
+          interstitialAd.load();
+        }
+      );
+
+      cleanupRef.current = () => {
+        unsubscribeLoaded();
+        unsubscribeError();
+        unsubscribeClosed();
+      };
+
+      interstitialAd.load();
+      interstitialRef.current = interstitialAd;
+      setInterstitial(interstitialAd);
+    };
+
+    initAd();
 
     return () => {
-      unsubscribeLoaded();
-      unsubscribeError();
-      unsubscribeClosed();
+      cancelled = true;
+      cleanupRef.current?.();
     };
   }, [adsEnabled]);
 
   const showInterstitialAd = useCallback(async (): Promise<void> => {
+    if (__DEV__) {
+      console.log("[AD] Skipping interstitial in dev mode");
+      return;
+    }
     if (!adsEnabled) {
       console.log("[AD] Ads disabled, skipping interstitial");
       return;
