@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "smoke-or-fire",
+    "name": "Smoke or Fire",
     "slug": "smoke-or-fire",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -16,6 +16,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.cadensorenson.smoke-or-fire",
+      "buildNumber": "1",
       "appleTeamId": "CYTQN5577V",
       "infoPlist": {
         "NSUserTrackingUsageDescription": "This identifier is used to show you personalized ads.",
@@ -179,7 +180,10 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "com.google.android.gms.permission.AD_ID"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -194,6 +198,13 @@
         }
       ],
       "expo-tracking-transparency"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "4b18855b-da94-4dd1-a2a3-ad6b1d76c61e"
+      }
+    },
+    "owner": "cadens-organization"
   }
 }

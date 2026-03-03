@@ -1,8 +1,27 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from "react";
 import { Platform } from "react-native";
-import { InterstitialAd, AdEventType } from "react-native-google-mobile-ads";
-import { requestTrackingPermissionsAsync } from "expo-tracking-transparency";
 import { fetchRemoteConfig } from "../services/firebase";
+
+let InterstitialAd: any = null;
+let AdEventType: any = null;
+let requestTrackingPermissionsAsync: (() => Promise<{ status: string }>) | null = null;
+let nativeAdsAvailable = false;
+
+try {
+  const adsModule = require("react-native-google-mobile-ads");
+  InterstitialAd = adsModule.InterstitialAd;
+  AdEventType = adsModule.AdEventType;
+  nativeAdsAvailable = true;
+} catch (e) {
+  console.warn("[AD] react-native-google-mobile-ads not available, ads disabled");
+}
+
+try {
+  const trackingModule = require("expo-tracking-transparency");
+  requestTrackingPermissionsAsync = trackingModule.requestTrackingPermissionsAsync;
+} catch (e) {
+  console.warn("[AD] expo-tracking-transparency not available");
+}
 
 const AD_UNIT_IDS = {
   ios: "ca-app-pub-8700976366260814/1896573277",
@@ -52,7 +71,7 @@ export function AdProvider({ children }: AdProviderProps) {
 
   // Load interstitial ad when ads are enabled
   useEffect(() => {
-    if (!adsEnabled) {
+    if (!adsEnabled || !nativeAdsAvailable) {
       return;
     }
 
@@ -61,7 +80,7 @@ export function AdProvider({ children }: AdProviderProps) {
     const initAd = async () => {
       // Request ATT on iOS; non-iOS defaults to non-personalized
       let nonPersonalized = true;
-      if (Platform.OS === "ios") {
+      if (Platform.OS === "ios" && requestTrackingPermissionsAsync) {
         const { status } = await requestTrackingPermissionsAsync();
         console.log("[AD] ATT tracking status:", status);
         nonPersonalized = status !== "granted";
@@ -133,8 +152,8 @@ export function AdProvider({ children }: AdProviderProps) {
       console.log("[AD] Skipping interstitial in dev mode");
       return;
     }
-    if (!adsEnabled) {
-      console.log("[AD] Ads disabled, skipping interstitial");
+    if (!adsEnabled || !nativeAdsAvailable) {
+      console.log("[AD] Ads disabled or unavailable, skipping interstitial");
       return;
     }
 
