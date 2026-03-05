@@ -339,6 +339,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return newState;
     }
 
+    case "COMPLETE_PYRAMID":
+      return { ...state, phase: "pyramid-complete" };
+
     case "RESET":
       nextPlayerId = 0;
       return { ...initialState };

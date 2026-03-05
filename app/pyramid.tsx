@@ -104,6 +104,13 @@ export default function Pyramid() {
     }
   }, [isMultiplayer, allRevealed, isMyTurnToAssign, showDrinkAssignment]);
 
+  // Navigate when phase changes to pyramid-complete (for both host and non-host)
+  useEffect(() => {
+    if (state?.phase === "pyramid-complete") {
+      router.replace("/pyramid-complete");
+    }
+  }, [state?.phase]);
+
   // Show loading state
   if (isLoading || !state) {
     return (
@@ -138,8 +145,8 @@ export default function Pyramid() {
     }, 650);
   };
 
-  const handleSeeResults = () => {
-    router.replace("/pyramid-complete");
+  const handleSeeResults = async () => {
+    await dispatch({ type: "COMPLETE_PYRAMID" });
   };
 
   const handleConfirmDrinks = async (assignments: DrinkAssignment[]) => {

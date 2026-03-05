@@ -7,7 +7,7 @@ export interface GameSettings {
 export const DEFAULT_GAME_SETTINGS: GameSettings = {
   roundDrinks: [1, 1, 1, 1],
   pyramidDrinks: [1, 2, 3, 4, 5],
-  gameMode: 'challenge',
+  gameMode: 'drink',
 };
 
 export type Suit = "hearts" | "diamonds" | "clubs" | "spades";
@@ -50,7 +50,7 @@ export interface TurnResult {
   drinks: number;
 }
 
-export type GamePhase = "registration" | "playing" | "round-complete" | "pyramid";
+export type GamePhase = "registration" | "playing" | "round-complete" | "pyramid" | "pyramid-complete";
 
 export interface PyramidMatch {
   player: Player;
@@ -117,4 +117,5 @@ export type GameAction =
   | { type: "RESET" }
   | { type: "SYNC_STATE"; state: GameState }
   | { type: "ASSIGN_DRINKS"; assignments: DrinkAssignment[]; advanceTurn?: boolean; completePyramidAssignment?: string }
-  | { type: "SET_SETTINGS"; settings: GameSettings };
+  | { type: "SET_SETTINGS"; settings: GameSettings }
+  | { type: "COMPLETE_PYRAMID" };

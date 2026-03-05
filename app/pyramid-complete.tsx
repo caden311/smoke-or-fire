@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
@@ -24,6 +24,14 @@ export default function PyramidComplete() {
   const { fs, sw, sh } = useResponsive();
   const isNavigatingRef = useRef(false);
   const [isNavigating, setIsNavigating] = useState(false);
+
+  // Navigate when phase changes (e.g., host resets the game)
+  useEffect(() => {
+    if (!state) return;
+    if (state.phase === "registration") {
+      router.replace("/");
+    }
+  }, [state?.phase]);
 
   // Show loading state
   if (isLoading || !state) {
