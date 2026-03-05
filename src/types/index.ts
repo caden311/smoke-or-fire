@@ -1,11 +1,13 @@
 export interface GameSettings {
   roundDrinks: [number, number, number, number];
   pyramidDrinks: [number, number, number, number, number];
+  gameMode: 'drink' | 'challenge';
 }
 
 export const DEFAULT_GAME_SETTINGS: GameSettings = {
   roundDrinks: [1, 1, 1, 1],
   pyramidDrinks: [1, 2, 3, 4, 5],
+  gameMode: 'challenge',
 };
 
 export type Suit = "hearts" | "diamonds" | "clubs" | "spades";

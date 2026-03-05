@@ -24,7 +24,8 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         const stored = await AsyncStorage.getItem(SETTINGS_KEY);
         if (stored) {
           const parsed = JSON.parse(stored) as GameSettings;
-          setSettings(parsed);
+          // Merge with defaults to handle new fields added after initial install
+          setSettings({ ...DEFAULT_GAME_SETTINGS, ...parsed });
         }
       } catch (error) {
         console.log("[SETTINGS] Failed to load settings:", error);

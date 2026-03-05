@@ -8,6 +8,7 @@ import { useMultiplayer } from "../src/context/MultiplayerContext";
 import { useGameState } from "../src/hooks/useGameState";
 import { useGameActions } from "../src/hooks/useGameActions";
 import { useTheme } from "../src/context/ThemeContext";
+import { useSettings } from "../src/context/SettingsContext";
 import ActionButton from "../src/components/ActionButton";
 import { SUIT_SYMBOLS } from "../constants/Cards";
 import { useResponsive } from "../src/hooks/useResponsive";
@@ -31,6 +32,8 @@ export default function RoundComplete() {
   const { state, isLoading } = useGameState();
   const { dispatch } = useGameActions();
   const { colors } = useTheme();
+  const { settings } = useSettings();
+  const isChallenge = settings.gameMode === 'challenge';
   const { fs, sw, sh, s } = useResponsive();
 
   // Navigate when phase changes
@@ -143,7 +146,9 @@ export default function RoundComplete() {
                       ]}
                     >
                       <Text style={[styles.resultBadgeText, { fontSize: fs(12) }]}>
-                        {result.correct ? "GAVE" : "TOOK"} {result.drinks ?? 1}
+                        {isChallenge
+                          ? result.correct ? "GAVE DARE" : "TOLD TRUTH"
+                          : `${result.correct ? "GAVE" : "TOOK"} ${result.drinks ?? 1}`}
                       </Text>
                     </View>
                   </View>
@@ -155,7 +160,7 @@ export default function RoundComplete() {
             {isMultiplayer && roundDrinkAssignments.length > 0 && (
               <View style={[styles.drinksSection, { marginTop: sh(20), paddingTop: sh(16), borderTopColor: colors.divider }]}>
                 <Text style={[styles.drinksSectionTitle, { fontSize: fs(14), marginBottom: sh(12), color: colors.textSecondary }]}>
-                  Drinks Given
+                  {isChallenge ? 'Dares Given' : 'Drinks Given'}
                 </Text>
                 {roundDrinkAssignments.map((assignment, index) => (
                   <Animated.View
@@ -167,7 +172,7 @@ export default function RoundComplete() {
                       {assignment.fromPlayerName} → {assignment.toPlayerName}
                     </Text>
                     <Text style={[styles.drinkAmount, { fontSize: fs(14), color: colors.accent }]}>
-                      {assignment.amount} {assignment.amount === 1 ? "drink" : "drinks"}
+                      {assignment.amount} {assignment.amount === 1 ? (isChallenge ? 'dare' : 'drink') : (isChallenge ? 'dares' : 'drinks')}
                     </Text>
                   </Animated.View>
                 ))}

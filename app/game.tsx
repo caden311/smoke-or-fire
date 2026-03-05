@@ -8,6 +8,7 @@ import { useMultiplayer } from "../src/context/MultiplayerContext";
 import { useGameState } from "../src/hooks/useGameState";
 import { useGameActions } from "../src/hooks/useGameActions";
 import { useTheme } from "../src/context/ThemeContext";
+import { useSettings } from "../src/context/SettingsContext";
 import FlippableCard from "../src/components/FlippableCard";
 import CardFace from "../src/components/CardFace";
 import ActionButton from "../src/components/ActionButton";
@@ -35,6 +36,8 @@ export default function GameRound() {
   const { state, isLoading, isMyTurn, currentPlayer } = useGameState();
   const { dispatch } = useGameActions();
   const { colors } = useTheme();
+  const { settings } = useSettings();
+  const isChallenge = settings.gameMode === 'challenge';
 
   const [guessState, setGuessState] = useState<'idle' | 'submitting' | 'guessed'>('idle');
   const [showDrawnCards, setShowDrawnCards] = useState(false);
@@ -412,10 +415,10 @@ export default function GameRound() {
                 />
               )}
               <View style={styles.nextButtonContainer}>
-                {/* In multiplayer, winning player can give drinks */}
+                {/* In multiplayer, winning player can give drinks/dares */}
                 {isMultiplayer && didWinThisTurn && isMyTurn && otherPlayers.length > 0 ? (
                   <ActionButton
-                    title="Give Drinks"
+                    title={isChallenge ? "Give Dares" : "Give Drinks"}
                     variant="primary"
                     onPress={handleGiveDrinks}
                   />

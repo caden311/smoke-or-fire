@@ -5,6 +5,7 @@ import Animated, {
   FadeInUp,
 } from "react-native-reanimated";
 import { useTheme } from "../context/ThemeContext";
+import { useSettings } from "../context/SettingsContext";
 import { Guess, Card } from "../types";
 import { SUIT_SYMBOLS } from "../../constants/Cards";
 import { useResponsive } from "../hooks/useResponsive";
@@ -24,6 +25,8 @@ export default function ResultBanner({
 }: ResultBannerProps) {
   const { fs, s } = useResponsive();
   const { colors } = useTheme();
+  const { settings } = useSettings();
+  const isChallenge = settings.gameMode === 'challenge';
   const suitSymbol = SUIT_SYMBOLS[card.suit];
   const guessLabels: Record<Guess, string> = {
     smoke: "Smoke (Black)",
@@ -59,9 +62,13 @@ export default function ResultBanner({
         {correct ? "CORRECT!" : "WRONG!"}
       </Animated.Text>
       <Text style={[styles.actionText, { fontSize: fs(18) }]}>
-        {correct
-          ? `Give ${drinks} drink${drinks !== 1 ? "s" : ""} to someone!`
-          : `Take ${drinks} drink${drinks !== 1 ? "s" : ""}!`}
+        {isChallenge
+          ? correct
+            ? "Give a dare!"
+            : "Tell a truth!"
+          : correct
+            ? `Give ${drinks} drink${drinks !== 1 ? "s" : ""} to someone!`
+            : `Take ${drinks} drink${drinks !== 1 ? "s" : ""}!`}
       </Text>
       <Text style={[styles.detailText, { fontSize: fs(13) }]}>
         You guessed {guessLabel} — Card was {cardLabel}

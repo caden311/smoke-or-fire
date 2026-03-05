@@ -2,6 +2,7 @@ import React, { useState, useMemo } from "react";
 import { View, Text, Modal, Pressable, StyleSheet, ScrollView } from "react-native";
 import { Player, DrinkAssignment } from "../types";
 import { useTheme } from "../context/ThemeContext";
+import { useSettings } from "../context/SettingsContext";
 import { useResponsive } from "../hooks/useResponsive";
 import { mediumHaptic } from "../utils/haptics";
 
@@ -28,6 +29,10 @@ export default function GiveDrinksModal({
 }: GiveDrinksModalProps) {
   const { fs, sw, sh, s } = useResponsive();
   const { colors } = useTheme();
+  const { settings } = useSettings();
+  const isChallenge = settings.gameMode === 'challenge';
+  const unit = isChallenge ? 'dare' : 'drink';
+  const units = isChallenge ? 'dares' : 'drinks';
 
   // Track drinks assigned to each player by their ID
   const [assignments, setAssignments] = useState<Record<string, number>>({});
@@ -93,9 +98,9 @@ export default function GiveDrinksModal({
       <View style={[styles.backdrop, { backgroundColor: colors.overlay }]}>
         <View style={[styles.content, { paddingHorizontal: sw(24), paddingTop: sh(28), paddingBottom: sh(40), backgroundColor: colors.surface }]}>
           {/* Header */}
-          <Text style={[styles.title, { fontSize: fs(24), color: colors.textPrimary }]}>Give Drinks</Text>
+          <Text style={[styles.title, { fontSize: fs(24), color: colors.textPrimary }]}>{isChallenge ? "Give Dares" : "Give Drinks"}</Text>
           <Text style={[styles.subtitle, { fontSize: fs(16), marginTop: sh(8), color: colors.textSecondary }]}>
-            You won! Assign {totalDrinks} {totalDrinks === 1 ? "drink" : "drinks"}
+            You won! Assign {totalDrinks} {totalDrinks === 1 ? unit : units}
           </Text>
 
           {/* Remaining counter */}
@@ -106,7 +111,7 @@ export default function GiveDrinksModal({
             marginTop: sh(16),
           }]}>
             <Text style={[styles.remainingText, { fontSize: fs(14) }]}>
-              {remaining === 0 ? "All drinks assigned!" : `${remaining} remaining`}
+              {remaining === 0 ? `All ${units} assigned!` : `${remaining} remaining`}
             </Text>
           </View>
 

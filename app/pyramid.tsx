@@ -7,6 +7,7 @@ import { useMultiplayer } from "../src/context/MultiplayerContext";
 import { useGameState } from "../src/hooks/useGameState";
 import { useGameActions } from "../src/hooks/useGameActions";
 import { useTheme } from "../src/context/ThemeContext";
+import { useSettings } from "../src/context/SettingsContext";
 import PyramidCard from "../src/components/PyramidCard";
 import GiveDrinksModal from "../src/components/GiveDrinksModal";
 import { useResponsive } from "../src/hooks/useResponsive";
@@ -20,6 +21,8 @@ export default function Pyramid() {
   const { state, isLoading } = useGameState();
   const { dispatch } = useGameActions();
   const { colors } = useTheme();
+  const { settings } = useSettings();
+  const isChallenge = settings.gameMode === 'challenge';
 
   const [flippingRow, setFlippingRow] = useState<number | null>(null);
   const [showDrinkAssignment, setShowDrinkAssignment] = useState(false);
@@ -177,14 +180,14 @@ export default function Pyramid() {
               {drinkTally.give > 0 && (
                 <View style={[styles.tallyBadge, { backgroundColor: colors.success + "20" }]}>
                   <Text style={[styles.tallyText, { color: colors.success, fontSize: fs(12) }]}>
-                    Give: {drinkTally.give}
+                    {isChallenge ? `Give ${drinkTally.give} dare${drinkTally.give !== 1 ? 's' : ''}` : `Give: ${drinkTally.give}`}
                   </Text>
                 </View>
               )}
               {drinkTally.take > 0 && (
                 <View style={[styles.tallyBadge, { backgroundColor: colors.fire + "20" }]}>
                   <Text style={[styles.tallyText, { color: colors.fire, fontSize: fs(12) }]}>
-                    Take: {drinkTally.take}
+                    {isChallenge ? `Tell ${drinkTally.take} truth${drinkTally.take !== 1 ? 's' : ''}` : `Take: ${drinkTally.take}`}
                   </Text>
                 </View>
               )}
@@ -197,7 +200,9 @@ export default function Pyramid() {
               const isActiveRow = rowIdx === state.pyramidCurrentRow;
               const rowAction = ROW_ACTIONS[rowIdx];
               const rowDrinks = state.settings.pyramidDrinks[rowIdx] ?? (rowIdx + 1);
-              const rowLabel = `${rowAction.toUpperCase()} ${rowDrinks}`;
+              const rowLabel = isChallenge
+                ? (rowAction === "give" ? "DARE" : "TRUTH")
+                : `${rowAction.toUpperCase()} ${rowDrinks}`;
               const labelColor = rowAction === "give" ? colors.success : colors.fire;
 
               const cardRow = (
@@ -245,7 +250,7 @@ export default function Pyramid() {
           {allRevealed && inDrinkAssignmentPhase && isMultiplayer && !isMyTurnToAssign && remainingAssignerNames.length > 0 && (
             <View style={styles.waitingContainer}>
               <Text style={[styles.waitingText, { fontSize: fs(16), color: colors.textSecondary }]}>
-                Waiting for {remainingAssignerNames.join(", ")} to assign drinks...
+                Waiting for {remainingAssignerNames.join(", ")} to assign {isChallenge ? 'dares' : 'drinks'}...
               </Text>
             </View>
           )}

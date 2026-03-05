@@ -9,6 +9,7 @@ import { useGameState } from "../src/hooks/useGameState";
 import { useGameActions } from "../src/hooks/useGameActions";
 import { useAds } from "../src/context/AdContext";
 import { useTheme } from "../src/context/ThemeContext";
+import { useSettings } from "../src/context/SettingsContext";
 import ActionButton from "../src/components/ActionButton";
 import { useResponsive } from "../src/hooks/useResponsive";
 
@@ -18,6 +19,8 @@ export default function PyramidComplete() {
   const { dispatch } = useGameActions();
   const { showInterstitialAd } = useAds();
   const { colors } = useTheme();
+  const { settings } = useSettings();
+  const isChallenge = settings.gameMode === 'challenge';
   const { fs, sw, sh } = useResponsive();
   const isNavigatingRef = useRef(false);
   const [isNavigating, setIsNavigating] = useState(false);
@@ -111,19 +114,19 @@ export default function PyramidComplete() {
                     <Text style={[styles.playerName, { fontSize: fs(18), color: colors.textPrimary }]}>{entry.player.name}</Text>
                     {received && received.totalReceived > 0 && (
                       <Text style={[styles.receivedText, { fontSize: fs(12), color: colors.textSecondary }]}>
-                        Received {received.totalReceived} from {received.fromPlayers.map(f => f.fromName).join(", ")}
+                        Received {received.totalReceived} {isChallenge ? (received.totalReceived === 1 ? 'dare' : 'dares') : (received.totalReceived === 1 ? 'drink' : 'drinks')} from {received.fromPlayers.map(f => f.fromName).join(", ")}
                       </Text>
                     )}
                   </View>
                   <View style={styles.badges}>
                     <View style={[styles.badge, { backgroundColor: colors.success, paddingHorizontal: sw(10), paddingVertical: sh(4) }]}>
                       <Text style={[styles.badgeText, { fontSize: fs(12) }]}>
-                        Gave {entry.gave}
+                        {isChallenge ? `Gave ${entry.gave} dare${entry.gave !== 1 ? 's' : ''}` : `Gave ${entry.gave}`}
                       </Text>
                     </View>
                     <View style={[styles.badge, { backgroundColor: colors.fire, paddingHorizontal: sw(10), paddingVertical: sh(4) }]}>
                       <Text style={[styles.badgeText, { fontSize: fs(12) }]}>
-                        Took {entry.took}
+                        {isChallenge ? `Told ${entry.took} truth${entry.took !== 1 ? 's' : ''}` : `Took ${entry.took}`}
                       </Text>
                     </View>
                   </View>
@@ -135,7 +138,7 @@ export default function PyramidComplete() {
             {pyramidAssignments.length > 0 && (
               <View style={[styles.drinksSection, { marginTop: sh(20), paddingTop: sh(16), borderTopColor: colors.divider }]}>
                 <Text style={[styles.drinksSectionTitle, { fontSize: fs(14), marginBottom: sh(12), color: colors.textSecondary }]}>
-                  Drinks Given
+                  {isChallenge ? 'Dares Given' : 'Drinks Given'}
                 </Text>
                 {pyramidAssignments.map((assignment, index) => (
                   <Animated.View
@@ -147,7 +150,7 @@ export default function PyramidComplete() {
                       {assignment.fromPlayerName} → {assignment.toPlayerName}
                     </Text>
                     <Text style={[styles.drinkAmount, { fontSize: fs(14), color: colors.accent }]}>
-                      {assignment.amount} {assignment.amount === 1 ? "drink" : "drinks"}
+                      {assignment.amount} {assignment.amount === 1 ? (isChallenge ? 'dare' : 'drink') : (isChallenge ? 'dares' : 'drinks')}
                     </Text>
                   </Animated.View>
                 ))}

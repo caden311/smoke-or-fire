@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet, ScrollView } from "react-native";
+import { View, Text, StyleSheet, ScrollView, Pressable } from "react-native";
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -46,7 +46,7 @@ export default function Settings() {
           <View style={[styles.header, { marginBottom: sh(24) }]}>
             <Text style={[styles.title, { fontSize: fs(32), color: colors.textPrimary }]}>Settings</Text>
             <Text style={[styles.subtitle, { fontSize: fs(14), color: colors.textSecondary }]}>
-              Configure drink amounts for each round
+              {settings.gameMode === 'challenge' ? 'Configure dare amounts for each round' : 'Configure drink amounts for each round'}
             </Text>
           </View>
 
@@ -59,10 +59,47 @@ export default function Settings() {
               <ThemeSelector />
             </View>
 
-            {/* Round Drinks Section */}
+            {/* Game Mode Section */}
             <View style={[styles.section, { marginBottom: sh(24) }]}>
               <Text style={[styles.sectionTitle, { fontSize: fs(14), marginBottom: sh(12), color: colors.textSecondary }]}>
-                Round Drinks
+                Game Mode
+              </Text>
+              <View style={[styles.modeToggle, { backgroundColor: colors.surface }]}>
+                <Pressable
+                  style={[
+                    styles.modeOption,
+                    settings.gameMode === 'drink' && { backgroundColor: colors.fire },
+                  ]}
+                  onPress={() => updateSettings({ gameMode: 'drink' })}
+                >
+                  <Text style={[styles.modeOptionText, { fontSize: fs(14), color: settings.gameMode === 'drink' ? '#FFFFFF' : colors.textSecondary }]}>
+                    Drink Mode
+                  </Text>
+                  <Text style={[styles.modeOptionSub, { fontSize: fs(11), color: settings.gameMode === 'drink' ? 'rgba(255,255,255,0.8)' : colors.textMuted }]}>
+                    Give & take drinks
+                  </Text>
+                </Pressable>
+                <Pressable
+                  style={[
+                    styles.modeOption,
+                    settings.gameMode === 'challenge' && { backgroundColor: colors.success },
+                  ]}
+                  onPress={() => updateSettings({ gameMode: 'challenge' })}
+                >
+                  <Text style={[styles.modeOptionText, { fontSize: fs(14), color: settings.gameMode === 'challenge' ? '#FFFFFF' : colors.textSecondary }]}>
+                    Challenge Mode
+                  </Text>
+                  <Text style={[styles.modeOptionSub, { fontSize: fs(11), color: settings.gameMode === 'challenge' ? 'rgba(255,255,255,0.8)' : colors.textMuted }]}>
+                    Dares & truths, no drinks
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+
+            {/* Round Drinks/Dares Section */}
+            <View style={[styles.section, { marginBottom: sh(24) }]}>
+              <Text style={[styles.sectionTitle, { fontSize: fs(14), marginBottom: sh(12), color: colors.textSecondary }]}>
+                {settings.gameMode === 'challenge' ? 'Round Dares' : 'Round Drinks'}
               </Text>
               {ROUND_LABELS.map((label, index) => (
                 <DrinkStepper
@@ -74,10 +111,10 @@ export default function Settings() {
               ))}
             </View>
 
-            {/* Pyramid Drinks Section */}
+            {/* Pyramid Drinks/Dares Section */}
             <View style={[styles.section, { marginBottom: sh(24) }]}>
               <Text style={[styles.sectionTitle, { fontSize: fs(14), marginBottom: sh(12), color: colors.textSecondary }]}>
-                Pyramid Drinks
+                {settings.gameMode === 'challenge' ? 'Pyramid Dares' : 'Pyramid Drinks'}
               </Text>
               {PYRAMID_LABELS.map((label, index) => (
                 <DrinkStepper
@@ -134,6 +171,24 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   section: {},
+  modeToggle: {
+    flexDirection: 'row',
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  modeOption: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 8,
+    borderRadius: 12,
+  },
+  modeOptionText: {
+    fontWeight: '700',
+  },
+  modeOptionSub: {
+    marginTop: 2,
+  },
   sectionTitle: {
     fontWeight: "700",
     textTransform: "uppercase",
