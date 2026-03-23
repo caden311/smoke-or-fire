@@ -7,7 +7,7 @@ declare global {
   }
 }
 
-const PUBLISHER_ID = process.env.EXPO_PUBLIC_ADSENSE_PUBLISHER_ID ?? "";
+const PUBLISHER_ID = "ca-pub-8700976366260814";
 const AD_SLOT_ID = "YOUR_AD_SLOT_ID";
 const CLOSE_DELAY_SECONDS = 5;
 const SAFETY_TIMEOUT_MS = 15_000;
