@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { GameSettings, DEFAULT_GAME_SETTINGS } from "../types";
+import { fetchRemoteConfig } from "../services/firebase";
 
 const SETTINGS_KEY = "@smoke_or_fire_settings";
 
@@ -26,6 +27,16 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
           const parsed = JSON.parse(stored) as GameSettings;
           // Merge with defaults to handle new fields added after initial install
           setSettings({ ...DEFAULT_GAME_SETTINGS, ...parsed });
+        } else {
+          // No saved settings — check remote config for default game mode
+          try {
+            const config = await fetchRemoteConfig();
+            if (config.defaultChallengeMode) {
+              setSettings({ ...DEFAULT_GAME_SETTINGS, gameMode: "challenge" });
+            }
+          } catch (configError) {
+            console.log("[SETTINGS] Failed to fetch remote config, using defaults:", configError);
+          }
         }
       } catch (error) {
         console.log("[SETTINGS] Failed to load settings:", error);

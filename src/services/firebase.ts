@@ -13,23 +13,23 @@ import {
   DatabaseReference,
 } from "firebase/database";
 
-// Firebase configuration
+// Firebase configuration — values injected at build time from EXPO_PUBLIC_* env vars
 const firebaseConfig = {
-  apiKey: "AIzaSyC1wt-8t3GhPYTBIQ5MaIL5Q_oYKIhCDxQ",
-  authDomain: "smoke-or-fire.firebaseapp.com",
-  databaseURL: "https://smoke-or-fire-default-rtdb.firebaseio.com",
-  projectId: "smoke-or-fire",
-  storageBucket: "smoke-or-fire.firebasestorage.app",
-  messagingSenderId: "611763859270",
-  appId: "1:611763859270:web:b0f581742aecf84ec17f47",
-  measurementId: "G-8MZ63Q00CR"
+  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY ?? "",
+  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN ?? "",
+  databaseURL: process.env.EXPO_PUBLIC_FIREBASE_DATABASE_URL ?? "",
+  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID ?? "",
+  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET ?? "",
+  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID ?? "",
+  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID ?? "",
+  measurementId: process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID ?? "",
 };
 
 let app: FirebaseApp | null = null;
 let database: Database | null = null;
 
 export function isFirebaseConfigured(): boolean {
-  return !firebaseConfig.apiKey.startsWith("YOUR_");
+  return !!firebaseConfig.apiKey;
 }
 
 export function initializeFirebase(): boolean {
@@ -82,6 +82,7 @@ export function configRef(): DatabaseReference {
 export interface RemoteConfig {
   multiplayerEnabled: boolean;
   adsEnabled: boolean;
+  defaultChallengeMode: boolean;
 }
 
 export async function fetchRemoteConfig(): Promise<RemoteConfig> {
@@ -91,14 +92,16 @@ export async function fetchRemoteConfig(): Promise<RemoteConfig> {
     const val = snapshot.val();
     console.log("[FB] Remote config raw value:", val);
     if (!val) {
-      return { multiplayerEnabled: true, adsEnabled: false };
+      return { multiplayerEnabled: true, adsEnabled: false, defaultChallengeMode: false };
     }
     // Handle string "false"/"true" from Firebase console
     const multiplayerEnabled = val.multiplayerEnabled;
     const adsEnabled = val.adsEnabled;
+    const defaultChallengeMode = val.defaultChallengeMode;
     return {
       multiplayerEnabled: multiplayerEnabled === true || multiplayerEnabled === "true",
       adsEnabled: adsEnabled === true || adsEnabled === "true",
+      defaultChallengeMode: defaultChallengeMode === true || defaultChallengeMode === "true",
     };
   } catch (error) {
     console.error("[FB] Failed to fetch remote config:", error);
