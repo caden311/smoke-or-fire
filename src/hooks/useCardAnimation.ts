@@ -36,6 +36,5 @@ export function useCardAnimation() {
       position: "absolute" as const,
     };
   });
-
   return { flip, reset, frontAnimatedStyle, backAnimatedStyle };
 }
