@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, Pressable } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, Pressable, Linking } from "react-native";
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -20,6 +20,37 @@ export default function PlayerRegistration() {
   const { fs, sh, sw } = useResponsive();
   const [isHosting, setIsHosting] = useState(false);
   const [showInputError, setShowInputError] = useState(false);
+
+  useEffect(() => {
+    if (Platform.OS !== "web") return;
+    document.title = "Smoke or Fire - Free Card Drinking Game | Play Online";
+    const meta = (name: string, content: string, property?: boolean) => {
+      const attr = property ? "property" : "name";
+      let el = document.querySelector(`meta[${attr}="${name}"]`) as HTMLMetaElement | null;
+      if (!el) {
+        el = document.createElement("meta");
+        el.setAttribute(attr, name);
+        document.head.appendChild(el);
+      }
+      el.content = content;
+    };
+    meta("description", "Play the classic Smoke or Fire card drinking game online with friends. Guess smoke or fire, higher or lower, inside or outside, and the suit. Free multiplayer support.");
+    meta("og:type", "website", true);
+    meta("og:url", "https://smokeorfire.vientapps.com/", true);
+    meta("og:title", "Smoke or Fire - Free Card Drinking Game", true);
+    meta("og:description", "Play the classic Smoke or Fire card drinking game online with friends. Free multiplayer, no downloads required.", true);
+    meta("og:site_name", "Smoke or Fire", true);
+    meta("twitter:card", "summary");
+    meta("twitter:title", "Smoke or Fire - Free Card Drinking Game");
+    meta("twitter:description", "Play the classic Smoke or Fire card drinking game online with friends. Free multiplayer, no downloads required.");
+    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+    if (!canonical) {
+      canonical = document.createElement("link");
+      canonical.rel = "canonical";
+      document.head.appendChild(canonical);
+    }
+    canonical.href = "https://smokeorfire.vientapps.com/";
+  }, []);
 
   const handleAddPlayer = (name: string) => {
     dispatch({ type: "ADD_PLAYER", name });
@@ -137,6 +168,15 @@ export default function PlayerRegistration() {
               </View>
             )}
           </View>
+
+          <Pressable
+            onPress={() => Linking.openURL("https://vientapps.com/")}
+            style={styles.attribution}
+          >
+            <Text style={[styles.attributionText, { fontSize: fs(11), color: colors.textMuted }]}>
+              Created by VientApps
+            </Text>
+          </Pressable>
         </KeyboardAvoidingView>
       </SafeAreaView>
     </LinearGradient>
@@ -205,5 +245,12 @@ const styles = StyleSheet.create({
   },
   hostHint: {
     textAlign: "center",
+  },
+  attribution: {
+    alignItems: "center",
+    paddingBottom: 12,
+  },
+  attributionText: {
+    textDecorationLine: "underline",
   },
 });

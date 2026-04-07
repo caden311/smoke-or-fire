@@ -337,7 +337,13 @@
       "package": "com.cadensorenson.smokeorfire"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "name": "Smoke or Fire - Card Drinking Game",
+      "shortName": "Smoke or Fire",
+      "description": "Play the classic Smoke or Fire card drinking game online with friends. Free multiplayer support, no downloads required.",
+      "lang": "en",
+      "themeColor": "#0D0D0D",
+      "backgroundColor": "#0D0D0D"
     },
     "plugins": [
       "expo-router",
