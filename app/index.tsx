@@ -170,11 +170,11 @@ export default function PlayerRegistration() {
           </View>
 
           <Pressable
-            onPress={() => Linking.openURL("https://vientapps.com/")}
+            onPress={() => Linking.openURL("https://vient.org/")}
             style={styles.attribution}
           >
             <Text style={[styles.attributionText, { fontSize: fs(11), color: colors.textMuted }]}>
-              Created by VientApps
+              Created by Vient
             </Text>
           </Pressable>
         </KeyboardAvoidingView>
